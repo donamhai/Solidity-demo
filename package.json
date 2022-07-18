@@ -1,0 +1,25 @@
+{
+  "name": "nelo-token-smartcontract",
+  "version": "0.0.1",
+  "description": "Nelo token Smart contract",
+  "main": "hardhat.config.js",
+  "scripts": {
+    "compile": "rm -rf artifacts/ cache/ && npx hardhat compile",
+    "deploy": "rm -rf artifacts/ cache/ && npx hardhat run --network testnet scripts/deploy.js",
+    "verify": "npx hardhat verify 0xfab2ef802657b1a5614FE023032F08B9d627d552 '0xA2807839b9d9980c0f67251514deded1CB8D5AB7' '0x36276A23fD22FCBe8b9f68Cf10c0f3882A29194c' --network testnet"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.5.0",
+    "dotenv": "^16.0.1"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.0",
+    "@nomiclabs/hardhat-etherscan": "^3.0.3",
+    "@nomiclabs/hardhat-waffle": "^2.0.0",
+    "chai": "^4.2.0",
+    "ethereum-waffle": "^3.0.0",
+    "ethers": "^5.0.0",
+    "hardhat": "^2.9.6",
+    "hardhat-contract-sizer": "^2.5.1"
+  }
+}
