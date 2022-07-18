@@ -11,7 +11,7 @@ import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import './RelipaNFT.sol';
 import './RelipaTreasure.sol';
-import './IMarketplace.sol';
+import '../interfaces/IMarketplace.sol';
 
 contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   using EnumerableSet for EnumerableSet.AddressSet;

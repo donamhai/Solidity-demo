@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC1155/ERC1155.sol';
 import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
 import './RelipaNFT.sol';
-import './IRelipaTreasure.sol';
+import '../interfaces/IRelipaTreasure.sol';
 
 contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure {
   uint256 public constant RELIPA_TREASURE = 1;
