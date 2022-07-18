@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
 import './RelipaNFT.sol';
-import './IAuctionContract3.sol';
+import '../interfaces/IAuctionContract3.sol';
 import '@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol';
 
 /*
