@@ -30,6 +30,14 @@ contract HDNToken is ERC20, Ownable, Pausable, AccessController {
     _unpause();
   }
 
+  function getBelanceOf(address account) public view returns (uint256) {
+    return balanceOf(account);
+  }
+
+  function getTotalSupply() public view returns (uint256) {
+    return _totalSupply;
+  }
+
   function _beforeTokenTransfer(
     address from,
     address to,
