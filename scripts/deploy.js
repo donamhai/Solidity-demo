@@ -5,10 +5,12 @@ const main = async () => {
     const [deployer] = await ethers.getSigners()
     console.log('Deploying contracts with the account:', deployer.address)
     console.log('Account balance:', (await deployer.getBalance()).toString())
-    const TokenContract = await ethers.getContractFactory('StakingTokenContract')
+    const TokenContract = await ethers.getContractFactory('AuctionContract3')
     const result = await TokenContract.deploy(
-      '0xA2807839b9d9980c0f67251514deded1CB8D5AB7',
-      '0x36276A23fD22FCBe8b9f68Cf10c0f3882A29194c'
+      '0xa68BfAd8EdB3c6AE803CD6c18c86D2Ac1b7f051e',
+      '0x34d176DeAb6625648855f80dF545954BCdb79168',
+      '0x90b08157434F070865da36aFA3F775a8e67F7b5f',
+      '5'
     )
     console.log('Deployed address:', result.address)
   } catch (error) {

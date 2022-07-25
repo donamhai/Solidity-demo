@@ -6,7 +6,7 @@
   "scripts": {
     "compile": "rm -rf artifacts/ cache/ && npx hardhat compile",
     "deploy": "rm -rf artifacts/ cache/ && npx hardhat run --network testnet scripts/deploy.js",
-    "verify": "npx hardhat verify 0xfab2ef802657b1a5614FE023032F08B9d627d552 '0xA2807839b9d9980c0f67251514deded1CB8D5AB7' '0x36276A23fD22FCBe8b9f68Cf10c0f3882A29194c' --network testnet"
+    "verify": "npx hardhat verify 0x249aA3c921ad38499d7A8aa9517BE44715908Dd1 '0xa68BfAd8EdB3c6AE803CD6c18c86D2Ac1b7f051e' '0x34d176DeAb6625648855f80dF545954BCdb79168' '0x90b08157434F070865da36aFA3F775a8e67F7b5f' '5' --network testnet"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0",

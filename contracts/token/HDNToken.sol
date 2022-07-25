@@ -8,7 +8,7 @@ import '@openzeppelin/contracts/security/Pausable.sol';
 import './AccessController.sol';
 
 contract HDNToken is ERC20, Ownable, Pausable, AccessController {
-  uint256 private _totalSupply = 4000000;
+  uint256 private _totalSupply = 400000;
   uint256 private _initial_supply = 200000;
   uint256 private _totalClaim;
   mapping(address => bool) private _blacklist;
@@ -34,6 +34,10 @@ contract HDNToken is ERC20, Ownable, Pausable, AccessController {
     return balanceOf(account);
   }
 
+  function getTotalClaim() public view returns (uint256) {
+    return _totalClaim;
+  }
+
   function getTotalSupply() public view returns (uint256) {
     return _totalSupply;
   }
@@ -49,7 +53,7 @@ contract HDNToken is ERC20, Ownable, Pausable, AccessController {
   }
 
   function claim(uint256 amount) public {
-    require(amount <= 1000000, 'Max amount one time');
+    require(amount <= 100000, 'Max amount one time');
     require(_totalClaim + amount <= _totalSupply - _initial_supply, 'Not enough token to claim');
     _totalClaim += amount;
     _mint(msg.sender, amount);
