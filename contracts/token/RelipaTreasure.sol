@@ -6,10 +6,13 @@ import '@openzeppelin/contracts/token/ERC1155/ERC1155.sol';
 import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
 import './RelipaNFT.sol';
 import '../interfaces/IRelipaTreasure.sol';
+import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure {
-  uint256 public constant RELIPA_TREASURE = 1;
-  address NFTaddress;
+  using ECDSA for bytes32;
+  uint256 private constant RELIPA_TREASURE = 1;
+  address private NFTaddress;
+  address private _verifyAddress;
 
   modifier CheckAddress(address _address) {
     require(_address != address(0), 'Address can not be zero address');
@@ -21,9 +24,14 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure {
     _;
   }
 
-  constructor(string memory uri_, address _NFTaddress) CheckAddress(_NFTaddress) ERC1155(uri_) {
+  constructor(
+    string memory uri_,
+    address _NFTaddress,
+    address verifyAddress_
+  ) CheckAddress(_NFTaddress) ERC1155(uri_) {
     require(Address.isContract(_NFTaddress), 'You must input contract address');
     NFTaddress = _NFTaddress;
+    _verifyAddress = verifyAddress_;
   }
 
   function setURI(string memory newUri) public onlyOwner {
@@ -55,13 +63,28 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure {
     NFTaddress = nftAddress;
   }
 
-  function unbox(uint256 amount) external override CheckAmount(amount) {
+  function unbox(
+    uint256 amount,
+    bytes memory signature,
+    string memory orderId
+  ) external override CheckAmount(amount) {
+    require(_verifySignature(signature, amount, orderId), 'Invalid signature');
     require(
       amount <= balanceOf(msg.sender, RELIPA_TREASURE),
       "Amount must be less or equal than sender treasure's amount"
     );
     RelipaNFT(NFTaddress).claimBatchToken(msg.sender, amount);
     emit unboxEvent(msg.sender, amount);
+  }
+
+  function _verifySignature(
+    bytes memory signature,
+    uint256 amount,
+    string memory orderId
+  ) private view returns (bool) {
+    bytes32 hashValue = keccak256(abi.encodePacked(amount, orderId, msg.sender));
+    address recover = hashValue.toEthSignedMessageHash().recover(signature);
+    return recover == _verifyAddress;
   }
 
   function supportsInterface(bytes4 interfaceId) public view override(ERC1155Receiver, ERC1155) returns (bool) {

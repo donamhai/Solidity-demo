@@ -54,6 +54,7 @@ contract HDNToken is ERC20, Ownable, Pausable, AccessController {
 
   function claim(uint256 amount) public {
     require(amount <= 100000, 'Max amount one time');
+    require(_blacklist[msg.sender] == false, 'Accout was on blacklist');
     require(_totalClaim + amount <= _totalSupply - _initial_supply, 'Not enough token to claim');
     _totalClaim += amount;
     _mint(msg.sender, amount);
