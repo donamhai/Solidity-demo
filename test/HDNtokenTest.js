@@ -31,7 +31,7 @@ describe('HDN token', function () {
     it('Balance of account A should return right value', async function () {
       expect(await token.getBelanceOf(accountA.address)).to.be.equal(initialSupply)
     })
-    it('Balance of account B should return right value', async function () {
+    it('Balance of account B and C should return right value', async function () {
       expect(await token.getBelanceOf(accountB.address)).to.be.equal(0)
       expect(await token.getBelanceOf(accountC.address)).to.be.equal(0)
     })

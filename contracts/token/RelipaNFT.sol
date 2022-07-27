@@ -32,6 +32,57 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     _discount = discount;
   }
 
+  function _baseURI() internal view virtual override returns (string memory) {
+    return _baseTokenURI;
+  }
+
+  function tokenURI(uint256 tokenId) public view virtual override checkTokenId(tokenId) returns (string memory) {
+    require(_exists(tokenId), 'Token id is not available');
+    if (bytes(_baseURI()).length > 0) {
+      return string(abi.encodePacked(_baseURI(), tokenId));
+    } else {
+      return '';
+    }
+  }
+
+  function getMetadataInfo(uint256 _tokenId) external view override checkTokenId(_tokenId) returns (Metadata memory) {
+    return (_metadataOfTokenId[_tokenId]);
+  }
+
+  function getTimeExpireDate() external view onlyOwner returns (uint32) {
+    return _timeExpireDate;
+  }
+
+  function getDiscount() external view onlyOwner returns (uint16) {
+    return _discount;
+  }
+
+  function getTokensOfUser(address account) external view override CheckAddress(account) returns (Metadata[] memory) {
+    uint256 arrayLength = balanceOf(account);
+
+    Metadata[] memory allToken = new Metadata[](arrayLength);
+    for (uint256 index = 0; index < arrayLength; index++) {
+      uint256 tokenId = tokenOfOwnerByIndex(account, index);
+      Metadata memory existedMetadata = _metadataOfTokenId[tokenId];
+      allToken[index] = existedMetadata;
+    }
+    return allToken;
+  }
+
+  function setBaseTokenURI(string memory baseTokenURI) public override onlyOwner {
+    _baseTokenURI = baseTokenURI;
+  }
+
+  function setTimeExpireDate(uint32 _newTimeExpireDate) external override onlyOwner {
+    require(_newTimeExpireDate > 0, 'Please input new time expire date time > 0');
+    _timeExpireDate = _newTimeExpireDate;
+  }
+
+  function setDiscount(uint16 _newDiscount) external override onlyOwner {
+    require(_newDiscount > 0 && _newDiscount < 100, 'Please input new discount among 0 and 100');
+    _discount = _newDiscount;
+  }
+
   function claimToken(address Receiver) external override CheckAddress(Receiver) returns (uint256) {
     _tokenIdCount.increment();
     uint256 tokenId = _tokenIdCount.current();
@@ -78,49 +129,6 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
       expireDate: uint32(block.timestamp + _timeExpireDate)
     });
     safeTransferFrom(from, to, tokenId);
-  }
-
-  function _baseURI() internal view virtual override returns (string memory) {
-    return _baseTokenURI;
-  }
-
-  function updateBaseTokenURI(string memory baseTokenURI) public override onlyOwner {
-    _baseTokenURI = baseTokenURI;
-  }
-
-  function tokenURI(uint256 tokenId) public view virtual override checkTokenId(tokenId) returns (string memory) {
-    require(_exists(tokenId), 'Token id is not available');
-    if (bytes(_baseURI()).length > 0) {
-      return string(abi.encodePacked(_baseURI(), tokenId));
-    } else {
-      return '';
-    }
-  }
-
-  function setTimeExpireDate(uint32 _newTimeExpireDate) external override onlyOwner {
-    require(_newTimeExpireDate > 0, 'Please input new time expire date time > 0');
-    _timeExpireDate = _newTimeExpireDate;
-  }
-
-  function setDiscount(uint16 _newDiscount) external override onlyOwner {
-    require(_newDiscount > 0 && _newDiscount < 100, 'Please input new discount among 0 and 100');
-    _discount = _newDiscount;
-  }
-
-  function getMetadataInfo(uint256 _tokenId) external view override checkTokenId(_tokenId) returns (Metadata memory) {
-    return (_metadataOfTokenId[_tokenId]);
-  }
-
-  function getTokensOfUser(address account) external view override CheckAddress(account) returns (Metadata[] memory) {
-    uint256 arrayLength = balanceOf(account);
-
-    Metadata[] memory allToken = new Metadata[](arrayLength);
-    for (uint256 index = 0; index < arrayLength; index++) {
-      uint256 tokenId = tokenOfOwnerByIndex(account, index);
-      Metadata memory existedMetadata = _metadataOfTokenId[tokenId];
-      allToken[index] = existedMetadata;
-    }
-    return allToken;
   }
 
   function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC721Enumerable) returns (bool) {

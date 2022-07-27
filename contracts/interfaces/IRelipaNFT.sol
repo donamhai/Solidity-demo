@@ -18,7 +18,7 @@ interface IRelipaNFT {
     uint256 tokenId
   ) external;
 
-  function updateBaseTokenURI(string memory baseTokenURI) external;
+  function setBaseTokenURI(string memory baseTokenURI) external;
 
   function setTimeExpireDate(uint32 _newTimeExpireDate) external;
 
