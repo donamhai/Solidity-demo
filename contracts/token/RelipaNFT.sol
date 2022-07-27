@@ -36,15 +36,6 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     return _baseTokenURI;
   }
 
-  function tokenURI(uint256 tokenId) public view virtual override checkTokenId(tokenId) returns (string memory) {
-    require(_exists(tokenId), 'Token id is not available');
-    if (bytes(_baseURI()).length > 0) {
-      return string(abi.encodePacked(_baseURI(), tokenId));
-    } else {
-      return '';
-    }
-  }
-
   function getMetadataInfo(uint256 _tokenId) external view override checkTokenId(_tokenId) returns (Metadata memory) {
     return (_metadataOfTokenId[_tokenId]);
   }
@@ -98,7 +89,6 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   function claimBatchToken(address Receiver, uint256 amount)
     external
     override
-    onlyOperator
     CheckAddress(Receiver)
     returns (uint256[] memory)
   {
