@@ -126,6 +126,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     uint256 tokenId
   ) external override CheckAddress(from) CheckAddress(to) checkTokenId(tokenId) {
     require(balanceOf(from) > 0, 'not enough NFT to transfer');
+    require(ownerOf(tokenId) == from, 'From address is not owner of NFT');
     _metadataOfTokenId[tokenId] = Metadata({
       ownerToken: to,
       discount: _discount,

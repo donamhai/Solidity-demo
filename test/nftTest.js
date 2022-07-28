@@ -47,7 +47,8 @@ describe('Relipa NFT', function () {
       await expect(nft.setTimeExpireDate(0)).to.be.revertedWith('Please input new time expire date time > 0')
     })
     it('should set time expire date correctly', async () => {
-      await nft.setTimeExpireDate(8888)
+      const tx1 = await nft.setTimeExpireDate(8888)
+      await tx1.wait()
       expect(await nft.getTimeExpireDate()).to.be.equal(8888)
     })
   })
@@ -63,7 +64,8 @@ describe('Relipa NFT', function () {
       await expect(nft.setDiscount(101)).to.be.revertedWith('Please input new discount among 0 and 100')
     })
     it('should set discount correctly', async () => {
-      await nft.setDiscount(50)
+      const tx1 = await nft.setDiscount(50)
+      await tx1.wait()
       expect(await nft.getDiscount()).to.be.equal(50)
     })
   })
@@ -77,28 +79,21 @@ describe('Relipa NFT', function () {
       const timestamp1 = (await ethers.provider.getBlock(txReceipt1.blockNumber)).timestamp
       expect(await nft.balanceOf(accountA.address)).to.be.equal(1)
       expect(await nft.ownerOf(1)).to.be.equal(accountA.address)
-      expect(await nft.getMetadataInfo(1)).to.be.equal([accountA.address, 2, timestamp1 + 9999])
-      console.log('123', await nft.getMetadataInfo(1))
-      expect(await nft.getTokensOfUser(accountA.address)).to.be.equal([accountA.address, 2, timestamp1 + 9999])
+      expect(await nft.getMetadataInfo(1)).to.be.eql([accountA.address, 2, timestamp1 + 9999])
 
       const tx2 = await nft.claimToken(accountA.address)
       const txReceipt2 = await tx2.wait()
       const timestamp2 = (await ethers.provider.getBlock(txReceipt2.blockNumber)).timestamp
       expect(await nft.balanceOf(accountA.address)).to.be.equal(2)
       expect(await nft.ownerOf(2)).to.be.equal(accountA.address)
-      expect(await nft.getMetadataInfo(2)).to.be.equal([accountA.address, 2, timestamp2 + 9999])
-      expect(await nft.getTokensOfUser(accountA.address)).to.be.equal(
-        [accountA.address, 2, timestamp2 + 9999],
-        [accountA.address, 2, timestamp2 + 9999]
-      )
+      expect(await nft.getMetadataInfo(2)).to.be.eql([accountA.address, 2, timestamp2 + 9999])
 
       const tx3 = await nft.claimToken(accountB.address)
       const txReceipt3 = await tx3.wait()
       const timestamp3 = (await ethers.provider.getBlock(txReceipt3.blockNumber)).timestamp
       expect(await nft.balanceOf(accountB.address)).to.be.equal(1)
       expect(await nft.ownerOf(3)).to.be.equal(accountB.address)
-      expect(await nft.getMetadataInfo(3)).to.be.equal([accountB.address, 2, timestamp3 + 9999])
-      expect(await nft.getTokensOfUser(accountB.address)).to.be.equal([accountB.address, 2, timestamp3 + 9999])
+      expect(await nft.getMetadataInfo(3)).to.be.eql([accountB.address, 2, timestamp3 + 9999])
     })
   })
 
@@ -109,39 +104,21 @@ describe('Relipa NFT', function () {
     it('should revert if amount = 0', async () => {
       await expect(nft.claimBatchToken(accountA.address, 0)).to.be.reverted
     })
-    // it('should claim batch token correctly', async () => {
-    //   await nft.claimBatchToken(accountA.address, 2)
-    //   expect(await nft.balanceOf(accountA.address)).to.be.equal(2)
-    //   expect(await nft.ownerOf(2)).to.be.equal(accountA.address)
-    //   expect(await nft.getTokensOfUser(accountA.address)).to.be.equal([
-    //     {
-    //       ownerToken: accountA.address,
-    //       discount: 2,
-    //       expireDate: 9999,
-    //     },
-    //     {
-    //       ownerToken: accountA.address,
-    //       discount: 2,
-    //       expireDate: 9999,
-    //     },
-    //   ])
-    //   await nft.claim(accountB.address, 2)
-    //   expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
-    //   expect(await nft.ownerOf(4)).to.be.equal(accountB.address)
-    //   expect(await nft.getTokensOfUser(accountB.address)).to.be.equal([
-    //     {
-    //       ownerToken: accountB.address,
-    //       discount: 2,
-    //       expireDate: 9999,
-    //     },
-    //     {
-    //       ownerToken: accountB.address,
-    //       discount: 2,
-    //       expireDate: 9999,
-    //     },
-    //   ])
-    // })
-    // })
+    it('should claim batch token correctly', async () => {
+      const tx1 = await nft.claimBatchToken(accountA.address, 3)
+      const txReceipt1 = await tx1.wait()
+      const timestamp1 = (await ethers.provider.getBlock(txReceipt1.blockNumber)).timestamp
+      expect(await nft.balanceOf(accountA.address)).to.be.equal(3)
+      expect(await nft.ownerOf(3)).to.be.equal(accountA.address)
+      expect(await nft.getMetadataInfo(3)).to.be.eql([accountA.address, 2, timestamp1 + 9999])
+
+      const tx2 = await nft.claimBatchToken(accountB.address, 3)
+      const txReceipt2 = await tx2.wait()
+      const timestamp2 = (await ethers.provider.getBlock(txReceipt2.blockNumber)).timestamp
+      expect(await nft.balanceOf(accountB.address)).to.be.equal(3)
+      expect(await nft.ownerOf(6)).to.be.equal(accountB.address)
+      expect(await nft.getMetadataInfo(6)).to.be.eql([accountB.address, 2, timestamp2 + 9999])
+    })
   })
 
   describe('setBaseTokenURI', function () {
@@ -155,11 +132,47 @@ describe('Relipa NFT', function () {
       await expect(nft.tokenURI(1)).to.be.reverted
     })
     it('should set base token URI correctly', async () => {
-      await nft.setBaseTokenURI(uri)
-      await nft.claimToken(accountA.address)
+      const tx1 = await nft.setBaseTokenURI(uri)
+      await tx1.wait()
+      const tx2 = await nft.claimToken(accountA.address)
+      await tx2.wait()
       expect(await nft.tokenURI(1)).to.be.equal(uri + '1')
-      await nft.claimToken(accountB.address)
+      const tx3 = await nft.claimToken(accountB.address)
+      await tx3.wait()
       expect(await nft.tokenURI(2)).to.be.equal(uri + '2')
+    })
+  })
+
+  describe('transferNFT', function () {
+    it('should revert if from address is zero address', async () => {
+      await expect(nft.transferNFT(address0, accountB.address, 1)).to.be.reverted
+    })
+    it('should revert if to address is zero address', async () => {
+      await expect(nft.transferNFT(accountA.address, address0, 1)).to.be.reverted
+    })
+    it('should revert if token Id = 0', async () => {
+      await expect(nft.transferNFT(accountA.address, accountB.address, 0)).to.be.reverted
+    })
+    it('should revert if balance of from addess = 0', async () => {
+      await expect(nft.transferNFT(accountA.address, accountB.address, 1)).to.be.reverted
+    })
+    it('should revert if is not owner of NFT', async () => {
+      const tx1 = await nft.claimToken(accountA.address)
+      await tx1.wait()
+      await expect(nft.transferNFT(accountA.address, accountB.address, 2)).to.be.reverted
+    })
+    it('should transfer NFT correctly', async () => {
+      const tx2 = await nft.claimBatchToken(accountA.address, 3)
+      await tx2.wait()
+      expect(await nft.balanceOf(accountA.address)).to.be.equal(3)
+      expect(await nft.balanceOf(accountB.address)).to.be.equal(0)
+      expect(await nft.ownerOf(3)).to.be.equal(accountA.address)
+
+      const tx3 = await nft.transferNFT(accountA.address, accountB.address, 3)
+      await tx3.wait()
+      expect(await nft.balanceOf(accountA.address)).to.be.equal(2)
+      expect(await nft.balanceOf(accountB.address)).to.be.equal(1)
+      expect(await nft.ownerOf(3)).to.be.equal(accountB.address)
     })
   })
 })
