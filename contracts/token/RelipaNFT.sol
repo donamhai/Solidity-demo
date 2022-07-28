@@ -36,8 +36,22 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     return _baseTokenURI;
   }
 
-  function getMetadataInfo(uint256 _tokenId) external view override checkTokenId(_tokenId) returns (Metadata memory) {
-    return (_metadataOfTokenId[_tokenId]);
+  function getMetadataInfo(uint256 _tokenId)
+    external
+    view
+    override
+    checkTokenId(_tokenId)
+    returns (
+      address,
+      uint16,
+      uint32
+    )
+  {
+    return (
+      _metadataOfTokenId[_tokenId].ownerToken,
+      _metadataOfTokenId[_tokenId].discount,
+      _metadataOfTokenId[_tokenId].expireDate
+    );
   }
 
   function getTimeExpireDate() external view onlyOwner returns (uint32) {
@@ -77,11 +91,10 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   function claimToken(address Receiver) external override CheckAddress(Receiver) returns (uint256) {
     _tokenIdCount.increment();
     uint256 tokenId = _tokenIdCount.current();
-    _metadataOfTokenId[tokenId] = Metadata({
-      ownerToken: Receiver,
-      discount: _discount,
-      expireDate: uint32(block.timestamp + _timeExpireDate)
-    });
+    _metadataOfTokenId[tokenId].ownerToken = Receiver;
+    _metadataOfTokenId[tokenId].discount = _discount;
+    _metadataOfTokenId[tokenId].expireDate = uint32(block.timestamp + _timeExpireDate);
+
     _safeMint(Receiver, tokenId);
     return tokenId;
   }
