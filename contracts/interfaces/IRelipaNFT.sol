@@ -24,14 +24,7 @@ interface IRelipaNFT {
 
   function setDiscount(uint16 _newDiscount) external;
 
-  function getMetadataInfo(uint256 _tokenId)
-    external
-    view
-    returns (
-      address,
-      uint16,
-      uint32
-    );
+  function getMetadataInfo(uint256 _tokenId) external view returns (Metadata memory);
 
   function getTokensOfUser(address account) external view returns (Metadata[] memory);
 }

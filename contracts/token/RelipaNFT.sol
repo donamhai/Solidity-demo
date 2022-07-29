@@ -36,22 +36,8 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     return _baseTokenURI;
   }
 
-  function getMetadataInfo(uint256 _tokenId)
-    external
-    view
-    override
-    checkTokenId(_tokenId)
-    returns (
-      address,
-      uint16,
-      uint32
-    )
-  {
-    return (
-      _metadataOfTokenId[_tokenId].ownerToken,
-      _metadataOfTokenId[_tokenId].discount,
-      _metadataOfTokenId[_tokenId].expireDate
-    );
+  function getMetadataInfo(uint256 _tokenId) external view override checkTokenId(_tokenId) returns (Metadata memory) {
+    return _metadataOfTokenId[_tokenId];
   }
 
   function getTimeExpireDate() external view onlyOwner returns (uint32) {

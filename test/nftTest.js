@@ -80,6 +80,7 @@ describe('Relipa NFT', function () {
       expect(await nft.balanceOf(accountA.address)).to.be.equal(1)
       expect(await nft.ownerOf(1)).to.be.equal(accountA.address)
       expect(await nft.getMetadataInfo(1)).to.be.eql([accountA.address, 2, timestamp1 + 9999])
+      expect(await nft.getTokensOfUser(accountA.address)).to.be.eql([[accountA.address, 2, timestamp1 + 9999]])
 
       const tx2 = await nft.claimToken(accountA.address)
       const txReceipt2 = await tx2.wait()
@@ -87,6 +88,10 @@ describe('Relipa NFT', function () {
       expect(await nft.balanceOf(accountA.address)).to.be.equal(2)
       expect(await nft.ownerOf(2)).to.be.equal(accountA.address)
       expect(await nft.getMetadataInfo(2)).to.be.eql([accountA.address, 2, timestamp2 + 9999])
+      expect(await nft.getTokensOfUser(accountA.address)).to.be.eql([
+        [accountA.address, 2, timestamp1 + 9999],
+        [accountA.address, 2, timestamp2 + 9999],
+      ])
 
       const tx3 = await nft.claimToken(accountB.address)
       const txReceipt3 = await tx3.wait()
@@ -94,6 +99,7 @@ describe('Relipa NFT', function () {
       expect(await nft.balanceOf(accountB.address)).to.be.equal(1)
       expect(await nft.ownerOf(3)).to.be.equal(accountB.address)
       expect(await nft.getMetadataInfo(3)).to.be.eql([accountB.address, 2, timestamp3 + 9999])
+      expect(await nft.getTokensOfUser(accountB.address)).to.be.eql([[accountB.address, 2, timestamp3 + 9999]])
     })
   })
 
@@ -111,6 +117,11 @@ describe('Relipa NFT', function () {
       expect(await nft.balanceOf(accountA.address)).to.be.equal(3)
       expect(await nft.ownerOf(3)).to.be.equal(accountA.address)
       expect(await nft.getMetadataInfo(3)).to.be.eql([accountA.address, 2, timestamp1 + 9999])
+      expect(await nft.getTokensOfUser(accountA.address)).to.be.eql([
+        [accountA.address, 2, timestamp1 + 9999],
+        [accountA.address, 2, timestamp1 + 9999],
+        [accountA.address, 2, timestamp1 + 9999],
+      ])
 
       const tx2 = await nft.claimBatchToken(accountB.address, 3)
       const txReceipt2 = await tx2.wait()
@@ -118,6 +129,11 @@ describe('Relipa NFT', function () {
       expect(await nft.balanceOf(accountB.address)).to.be.equal(3)
       expect(await nft.ownerOf(6)).to.be.equal(accountB.address)
       expect(await nft.getMetadataInfo(6)).to.be.eql([accountB.address, 2, timestamp2 + 9999])
+      expect(await nft.getTokensOfUser(accountB.address)).to.be.eql([
+        [accountB.address, 2, timestamp2 + 9999],
+        [accountB.address, 2, timestamp2 + 9999],
+        [accountB.address, 2, timestamp2 + 9999],
+      ])
     })
   })
 
