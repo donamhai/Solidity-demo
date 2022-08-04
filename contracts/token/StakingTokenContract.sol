@@ -5,7 +5,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
-import '../interfaces//IStakingTokenContract.sol';
+import '../interfaces/IStakingTokenContract.sol';
 
 contract StakingTokenContract is Ownable, IStakingTokenContract {
   using Counters for Counters.Counter;
