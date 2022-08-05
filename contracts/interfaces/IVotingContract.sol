@@ -2,13 +2,16 @@
 pragma solidity ^0.8.1;
 
 interface IVotingContract {
+  event SetTimeVote(uint32 _newTime);
   event AddVoterEvent(address voterAddress, string voterName);
   event RemoveVoterEvent(address voterAddress);
-  event addProposalEvent(address chairman, uint256 voteOrderId, string title, uint32 startTime, uint32 timeVote);
+  event AddProposalEvent(address chairman, uint256 voteOrderId, string title, uint32 startTime, uint32 timeVote);
   event cancelProposalEvent(address chairman, uint256 voteOrderId, uint32 timeCancel);
   event DoVoteEvent(address Voter, uint256 voteOrderId, uint32 timeVote);
   event EndVoteEvent(uint256 voteOrderId, uint256 totalVote, uint256 persentageVote, uint32 endTime);
-  event destructProposalEvent(uint256 voteOrderId, uint32 timeRemove);
+  event DestructProposalEvent(uint256 voteOrderId, uint32 timeRemove);
+
+  function setTimeVote(uint32 _newTime) external;
 
   function addVoter(address _voterAddress, string memory _voterName) external;
 

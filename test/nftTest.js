@@ -138,6 +138,9 @@ describe('Relipa NFT', function () {
   })
 
   describe('setBaseTokenURI', function () {
+    it('should revert if empty string input', async () => {
+      await expect(nft.connect(accountB).setBaseTokenURI('')).to.be.reverted
+    })
     it('should revert if not admin role', async () => {
       await expect(nft.connect(accountB).setBaseTokenURI('google.com')).to.be.reverted
     })

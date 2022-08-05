@@ -37,9 +37,10 @@ contract VotingContract is Ownable, IVotingContract {
     _;
   }
 
-  function setTimeVote(uint32 _newTime) external onlyOwner {
+  function setTimeVote(uint32 _newTime) external override onlyOwner {
     require(_newTime > 0, 'Please input new time > 0');
     timeVote = _newTime;
+    emit SetTimeVote(_newTime);
   }
 
   function getOwnerOfProposal(uint256 _voteId) external view returns (address) {
@@ -84,13 +85,14 @@ contract VotingContract is Ownable, IVotingContract {
     _vote.title = _title;
     _vote.startTime = uint32(block.timestamp);
     _vote.endTime = uint32(block.timestamp + timeVote);
-    emit addProposalEvent(msg.sender, voteId, _title, uint32(block.timestamp), timeVote);
+    emit AddProposalEvent(msg.sender, voteId, _title, uint32(block.timestamp), timeVote);
   }
 
   function cancelProposal(uint256 _voteId) external override checkVoteId(_voteId) {
     require(voteProposalOfId[_voteId].chairman == msg.sender, 'You are not owner of this proposal');
     require(voteProposalOfId[_voteId].endTime > block.timestamp, 'End time, can not cancel');
     delete voteProposalOfId[_voteId];
+    emit cancelProposalEvent(msg.sender, _voteId, uint32(block.timestamp));
   }
 
   function doVote(uint256 _voteId) external override checkVoteId(_voteId) {
@@ -101,16 +103,20 @@ contract VotingContract is Ownable, IVotingContract {
     VoteProposal storage _vote = voteProposalOfId[_voteId];
     _vote.totalVote++;
     voterRegister[msg.sender].voted[_voteId] = true;
+    emit DoVoteEvent(msg.sender, _voteId, uint32(block.timestamp));
   }
 
-  function endVote(uint256 _voteId) external view override checkVoteId(_voteId) returns (uint16) {
+  function endVote(uint256 _voteId) external override checkVoteId(_voteId) returns (uint16) {
     require(voteProposalOfId[_voteId].chairman == msg.sender, 'You are not owner of this proposal');
     require(voteProposalOfId[_voteId].endTime <= block.timestamp, 'Not end time to close vote');
     uint16 persentageVote = uint16((voteProposalOfId[_voteId].totalVote * 100) / totalVoter);
+    VoteProposal memory _vote = voteProposalOfId[_voteId];
+    emit EndVoteEvent(_voteId, _vote.totalVote, persentageVote, _vote.endTime);
     return persentageVote;
   }
 
   function destructProposal(uint256 _voteId) external override onlyOwner checkVoteId(_voteId) {
     delete voteProposalOfId[_voteId];
+    emit DestructProposalEvent(_voteId, uint32(block.timestamp));
   }
 }

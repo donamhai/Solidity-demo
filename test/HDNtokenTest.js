@@ -9,7 +9,7 @@ describe('HDN token', function () {
 
   beforeEach(async () => {
     ;[accountA, accountB, accountC] = await ethers.getSigners()
-    const Token = await ethers.getContractFactory('HDNToken')
+    const Token = await ethers.getContractFactory('HdnToken')
     token = await Token.deploy()
     await token.deployed()
   })
@@ -38,32 +38,35 @@ describe('HDN token', function () {
   })
 
   describe('claim', function () {
+    it('Claim should revert if not admin', async function () {
+      await expect(token.connect(accountB).claim(100000, accountB.address)).to.be.reverted
+    })
     it('Claim should revert if amount exceeds 100000', async function () {
-      await expect(token.connect(accountB).claim(100001)).to.be.revertedWith('Max amount one time')
+      await expect(token.claim(100001, accountB.address)).to.be.revertedWith('Max amount one time')
     })
     it('claim should work correctly', async function () {
-      const tx1 = await token.connect(accountB).claim(100000)
+      const tx1 = await token.claim(100000, accountB.address)
       await tx1.wait()
       expect(await token.getBelanceOf(accountB.address)).to.be.equal(100000)
-      const tx2 = await token.connect(accountC).claim(100000)
+      const tx2 = await token.claim(100000, accountC.address)
       await tx2.wait()
       expect(await token.getBelanceOf(accountC.address)).to.be.equal(100000)
       expect(await token.getTotalClaim()).to.be.equal(200000)
     })
     it('claim should revert if total claim + amount > total supply -initial supply ', async function () {
-      const tx1 = await token.connect(accountB).claim(100000)
+      const tx1 = await token.claim(100000, accountB.address)
       await tx1.wait()
-      const tx2 = await token.connect(accountC).claim(100000)
+      const tx2 = await token.claim(100000, accountC.address)
       await tx2.wait()
-      await expect(token.connect(accountC).claim(50000)).to.be.revertedWith('Not enough token to claim')
+      await expect(token.claim(50000, accountC.address)).to.be.revertedWith('Not enough token to claim')
     })
   })
 
   describe('resetTotalSupply', function () {
     it('resetTotalSupply should be revert if amount < total claim + initial supply', async function () {
-      const tx1 = await token.connect(accountB).claim(100000)
+      const tx1 = await token.claim(100000, accountB.address)
       await tx1.wait()
-      const tx2 = await token.connect(accountC).claim(100000)
+      const tx2 = await token.claim(100000, accountC.address)
       await tx2.wait()
       await expect(token.resetTotalSupply(300000)).to.be.revertedWith('Total supply is too low')
     })
@@ -86,7 +89,7 @@ describe('HDN token', function () {
     it('should pause contract correctly', async function () {
       const tx = await token.pause()
       await tx.wait()
-      await expect(token.connect(accountC).claim(50000)).to.be.revertedWith('Pausable: paused')
+      await expect(token.claim(50000, accountB.address)).to.be.revertedWith('Pausable: paused')
     })
   })
 
@@ -107,7 +110,7 @@ describe('HDN token', function () {
       const unpauseTx = await token.unpause()
       await unpauseTx.wait()
       await expect(unpauseTx).to.be.emit(token, 'Unpaused').withArgs(accountA.address)
-      const tx2 = await token.connect(accountC).claim(50000)
+      const tx2 = await token.claim(50000, accountC.address)
       await tx2.wait()
       expect(await token.getBelanceOf(accountC.address)).to.be.equal(50000)
     })
@@ -128,7 +131,7 @@ describe('HDN token', function () {
     it('should add to blacklist correctly', async function () {
       const tx = await token.addToBlackList(accountB.address)
       await tx.wait()
-      await expect(token.connect(accountB).claim(50000)).to.be.reverted
+      await expect(token.claim(50000, accountB.address)).to.be.reverted
     })
   })
 
@@ -148,7 +151,7 @@ describe('HDN token', function () {
     it('should remove from blacklist correctly', async function () {
       const tx2 = await token.removeFromBlackList(accountB.address)
       await tx2.wait()
-      const tx3 = await token.connect(accountB).claim(50000)
+      const tx3 = await token.claim(50000, accountB.address)
       await tx3.wait()
       expect(await token.getBelanceOf(accountB.address)).to.be.equal(50000)
     })

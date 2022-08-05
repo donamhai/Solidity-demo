@@ -2,6 +2,13 @@
 pragma solidity ^0.8.1;
 
 interface IRelipaNFT {
+  event SetBaseTokenURIEvent(string baseTokenURI);
+  event SetTimeExpireDateEvent(uint32 _newTimeExpireDate);
+  event SetDiscountEvent(uint16 _newDiscount);
+  event ClaimTokenEvent(address Receiver, uint256 tokenId, uint32 timeClaimToken);
+  event ClaimBatchTokenEvent(address receiver, uint256 amount, uint256[] tokenIds, uint32 timeClaimToken);
+  event TransferNFTEvent(address from, address to, uint256 tokenId, uint32 timeTransfer);
+
   struct Metadata {
     address ownerToken;
     uint16 discount;

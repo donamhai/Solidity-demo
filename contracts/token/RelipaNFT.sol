@@ -50,16 +50,11 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
 
   function tokenURI(uint256 tokenId) public view virtual override checkTokenId(tokenId) returns (string memory) {
     require(_exists(tokenId), 'Token id is not available');
-    if (bytes(_baseURI()).length > 0) {
-      return string(abi.encodePacked(_baseURI(), Strings.toString(tokenId)));
-    } else {
-      return '';
-    }
+    return string(abi.encodePacked(_baseURI(), Strings.toString(tokenId)));
   }
 
   function getTokensOfUser(address account) external view override CheckAddress(account) returns (Metadata[] memory) {
     uint256 arrayLength = balanceOf(account);
-
     Metadata[] memory allToken = new Metadata[](arrayLength);
     for (uint256 index = 0; index < arrayLength; index++) {
       uint256 tokenId = tokenOfOwnerByIndex(account, index);
@@ -70,17 +65,21 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   }
 
   function setBaseTokenURI(string memory baseTokenURI) public override onlyOwner {
+    require(bytes(baseTokenURI).length > 0, 'Please input base token URI');
     _baseTokenURI = baseTokenURI;
+    emit SetBaseTokenURIEvent(baseTokenURI);
   }
 
   function setTimeExpireDate(uint32 _newTimeExpireDate) external override onlyOwner {
     require(_newTimeExpireDate > 0, 'Please input new time expire date time > 0');
     _timeExpireDate = _newTimeExpireDate;
+    emit SetTimeExpireDateEvent(_newTimeExpireDate);
   }
 
   function setDiscount(uint16 _newDiscount) external override onlyOwner {
     require(_newDiscount > 0 && _newDiscount < 100, 'Please input new discount among 0 and 100');
     _discount = _newDiscount;
+    emit SetDiscountEvent(_newDiscount);
   }
 
   function claimToken(address Receiver) external override CheckAddress(Receiver) returns (uint256) {
@@ -91,6 +90,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     _metadataOfTokenId[tokenId].expireDate = uint32(block.timestamp + _timeExpireDate);
 
     _safeMint(Receiver, tokenId);
+    emit ClaimTokenEvent(Receiver, tokenId, uint32(block.timestamp));
     return tokenId;
   }
 
@@ -112,6 +112,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
       });
       _safeMint(Receiver, tokenIds[i]);
     }
+    emit ClaimBatchTokenEvent(Receiver, amount, tokenIds, uint32(block.timestamp));
     return tokenIds;
   }
 
@@ -122,12 +123,11 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   ) external override CheckAddress(from) CheckAddress(to) checkTokenId(tokenId) {
     require(balanceOf(from) > 0, 'not enough NFT to transfer');
     require(ownerOf(tokenId) == from, 'From address is not owner of NFT');
-    _metadataOfTokenId[tokenId] = Metadata({
-      ownerToken: to,
-      discount: _discount,
-      expireDate: uint32(block.timestamp + _timeExpireDate)
-    });
+    _metadataOfTokenId[tokenId].ownerToken = to;
+    _metadataOfTokenId[tokenId].discount = _discount;
+    _metadataOfTokenId[tokenId].expireDate = uint32(block.timestamp + _timeExpireDate);
     safeTransferFrom(from, to, tokenId);
+    emit TransferNFTEvent(from, to, tokenId, uint32(block.timestamp));
   }
 
   function supportsInterface(bytes4 interfaceId) public view override(AccessControl, ERC721Enumerable) returns (bool) {
