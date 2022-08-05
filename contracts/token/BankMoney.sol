@@ -4,10 +4,12 @@ pragma solidity ^0.8.1;
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
+import './IBankMoney.sol'
 
-contract BankMoney {
-  address private owner;
+contract BankMoney is Ownable, IBankMoney {
   ERC20 token;
+  address private recieveWallet;
   uint256 private limitWithdrawToken;
   uint32 private timeCooldown;
 
@@ -18,67 +20,72 @@ contract BankMoney {
     uint32 readyTime;
   }
 
-  constructor(
-    ERC20 tracker_0x_address,
-    uint256 _limitWithdrawToken,
-    uint32 _timeCooldown
-  ) {
-    require(_limitWithdrawToken > 0 && _timeCooldown > 0);
-    owner = msg.sender;
+  modifier CheckAddress(address _address) {
+    require(_address != address(0), 'Address can not be zero address');
+    _;
+  }
+
+  modifier CheckAmount(uint256 amount) {
+    require(amount >0 ,"Please input amount greater than 0");
+    _;
+  }
+
+  constructor(ERC20 tracker_0x_address,address _recieveWallet,uint256 _limitWithdrawToken, uint32 _timeCooldown ) {
+    recieveWallet = _recieveWallet;
     token = ERC20(tracker_0x_address);
     limitWithdrawToken = _limitWithdrawToken;
     timeCooldown = _timeCooldown;
   }
 
-  modifier onlyOwner() {
-    require(msg.sender == owner, 'You are not allowed');
-    _;
+  function getBalanceOf(address _account) external view returns (uint256) {
+    return accountUser[_account].balanceOfToken[address(token)];
   }
 
-  function setLimitWithdrawToken(uint256 _limitWithdrawToken) external onlyOwner {
+  function getRecieveWallet() external view returns (address) {
+    return recieveWallet;
+  }
+
+  function getlimitWithdraw () external view returns (uint256){
+    return limitWithdrawToken;
+  }
+
+  function getTimeCoolDown () external view returns (uint32){
+    return timeCooldown;
+  }
+
+  function setRecieveWallet (address _recieveWallet)external CheckAddress(_recieveWallet) override  onlyOwner {
+    recieveWallet = _recieveWallet;
+  }
+
+  function setLimitWithdraw (uint256 _limitWithdrawToken) external override onlyOwner {
     require(_limitWithdrawToken > 0, 'Limit Withdraw Token must be greater than 0');
     limitWithdrawToken = _limitWithdrawToken;
   }
 
-  function setCooldownTime(uint32 _newCooldown) external onlyOwner {
+  function setCooldownTime(uint32 _newCooldown) external override onlyOwner {
     require(_newCooldown > 0, 'Please input new cooldown time > 0');
     timeCooldown = _newCooldown;
-  }
+  }  
 
-  function changeToken(address _addressToken) external onlyOwner {
-    require(_addressToken != address(0), 'Can not change to zero address');
+  function changeToken(address _addressToken) CheckAddress(_addressToken) external override onlyOwner {
     require(Address.isContract(_addressToken), 'You must input token address');
     token = ERC20(_addressToken);
   }
 
-  function deposit(uint256 amount) public {
-    require(amount > 0, 'Please input amount > 0');
+  function depositToken(uint256 amount) external override CheckAmount(amount) {
     require(token.balanceOf(msg.sender) >= amount, "Your funds don't enough to deposit");
     accountUser[msg.sender].balanceOfToken[address(token)] += amount;
-    token.transferFrom(msg.sender, owner, amount);
+    token.transferFrom(msg.sender, recieveWallet, amount);
   }
 
-  function getBalanceOf(address _account) public view returns (uint256) {
-    return accountUser[_account].balanceOfToken[address(token)];
-  }
-
-  function _isReady() private view returns (bool) {
-    return (block.timestamp >= accountUser[msg.sender].readyTime);
-  }
-
-  function _triggerCooldown() private {
-    accountUser[msg.sender].readyTime = uint32(block.timestamp + timeCooldown);
-  }
-
-  function withdrawTokens(uint256 amount) public {
-    require(_isReady(), 'The next withdrawal is not yet');
+  function withdrawTokens(uint256 amount) external override CheckAmount(amount) {
+    require(block.timestamp >= accountUser[msg.sender].readyTime, 'The next withdrawal is not yet');
     require(amount <= limitWithdrawToken, 'Max amount one time');
-    require(token.balanceOf(owner) >= amount, 'Wallet of owner is not enough token');
+    require(token.balanceOf(recieveWallet) >= amount, 'Wallet of reciever is not enough token');
     require(accountUser[msg.sender].balanceOfToken[address(token)] >= amount, 'You are not enough funds to return');
-    unchecked {
-      accountUser[msg.sender].balanceOfToken[address(token)] -= amount;
-    }
-    _triggerCooldown();
-    token.transferFrom(owner, msg.sender, amount);
+
+    accountUser[msg.sender].balanceOfToken[address(token)] -= amount;
+    accountUser[msg.sender].readyTime = uint32(block.timestamp + timeCooldown);
+    token.transferFrom(recieveWallet, msg.sender, amount);
   }
 }
