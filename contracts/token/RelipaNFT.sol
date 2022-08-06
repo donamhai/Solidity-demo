@@ -28,6 +28,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   }
 
   constructor(uint32 timeExpireDate, uint16 discount) ERC721('RLP_HDN', 'RLP') {
+    _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _timeExpireDate = timeExpireDate;
     _discount = discount;
   }
@@ -67,22 +68,19 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   function setBaseTokenURI(string memory baseTokenURI) public override onlyOwner {
     require(bytes(baseTokenURI).length > 0, 'Please input base token URI');
     _baseTokenURI = baseTokenURI;
-    emit SetBaseTokenURIEvent(baseTokenURI);
   }
 
   function setTimeExpireDate(uint32 _newTimeExpireDate) external override onlyOwner {
     require(_newTimeExpireDate > 0, 'Please input new time expire date time > 0');
     _timeExpireDate = _newTimeExpireDate;
-    emit SetTimeExpireDateEvent(_newTimeExpireDate);
   }
 
   function setDiscount(uint16 _newDiscount) external override onlyOwner {
     require(_newDiscount > 0 && _newDiscount < 100, 'Please input new discount among 0 and 100');
     _discount = _newDiscount;
-    emit SetDiscountEvent(_newDiscount);
   }
 
-  function claimToken(address Receiver) external override CheckAddress(Receiver) returns (uint256) {
+  function claimToken(address Receiver) external override CheckAddress(Receiver) onlyOperator1 returns (uint256) {
     _tokenIdCount.increment();
     uint256 tokenId = _tokenIdCount.current();
     _metadataOfTokenId[tokenId].ownerToken = Receiver;
@@ -98,6 +96,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     external
     override
     CheckAddress(Receiver)
+    onlyOperator1
     returns (uint256[] memory)
   {
     require(amount > 0, 'amount must be greater than 0');
@@ -120,7 +119,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     address from,
     address to,
     uint256 tokenId
-  ) external override CheckAddress(from) CheckAddress(to) checkTokenId(tokenId) {
+  ) external override CheckAddress(from) CheckAddress(to) checkTokenId(tokenId) onlyOperator2 {
     require(balanceOf(from) > 0, 'not enough NFT to transfer');
     require(ownerOf(tokenId) == from, 'From address is not owner of NFT');
     _metadataOfTokenId[tokenId].ownerToken = to;

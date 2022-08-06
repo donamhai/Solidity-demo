@@ -24,14 +24,9 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure {
     _;
   }
 
-  constructor(
-    string memory uri_,
-    address _NFTaddress,
-    address verifyAddress_
-  ) CheckAddress(_NFTaddress) ERC1155(uri_) {
+  constructor(string memory uri_, address _NFTaddress) CheckAddress(_NFTaddress) ERC1155(uri_) {
     require(Address.isContract(_NFTaddress), 'You must input contract address');
     NFTaddress = _NFTaddress;
-    _verifyAddress = verifyAddress_;
   }
 
   function setURI(string memory newUri) public onlyOwner {
@@ -63,12 +58,7 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure {
     NFTaddress = nftAddress;
   }
 
-  function unbox(
-    uint256 amount,
-    bytes memory signature,
-    string memory orderId
-  ) external override CheckAmount(amount) {
-    require(_verifySignature(signature, amount, orderId), 'Invalid signature');
+  function unbox(uint256 amount) external override CheckAmount(amount) {
     require(
       amount <= balanceOf(msg.sender, RELIPA_TREASURE),
       "Amount must be less or equal than sender treasure's amount"

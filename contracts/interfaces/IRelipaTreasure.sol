@@ -17,11 +17,7 @@ interface IRelipaTreasure {
     uint256 amount
   ) external;
 
-  function unbox(
-    uint256 amount,
-    bytes memory signature,
-    string memory orderId
-  ) external;
+  function unbox(uint256 amount) external;
 
   function setNftAddress(address nftAddress) external;
 }
