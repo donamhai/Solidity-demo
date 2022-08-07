@@ -19,4 +19,14 @@ interface IBankMoney {
   function transferToken(uint256 amount, address to) external;
 
   function withdrawToken(uint256 amount) external;
+
+  function getTokenAddress() external view returns (address);
+
+  function getRecieveWallet() external view returns (address);
+
+  function getlimitWithdraw() external view returns (uint256);
+
+  function getTimeCoolDown() external view returns (uint32);
+
+  function getBalanceOf(address _account) external view returns (uint256);
 }

@@ -42,23 +42,23 @@ contract BankMoney is Ownable, IBankMoney {
     timeCooldown = _timeCooldown;
   }
 
-  function getBalanceOf(address _account) external view returns (uint256) {
+  function getBalanceOf(address _account) external view override returns (uint256) {
     return accountUser[_account].balanceOfToken[address(token)];
   }
 
-  function getTokenAddress() external view returns (address) {
+  function getTokenAddress() external view override returns (address) {
     return address(token);
   }
 
-  function getRecieveWallet() external view returns (address) {
+  function getRecieveWallet() external view override returns (address) {
     return recieveWallet;
   }
 
-  function getlimitWithdraw() external view returns (uint256) {
+  function getlimitWithdraw() external view override returns (uint256) {
     return limitWithdrawToken;
   }
 
-  function getTimeCoolDown() external view returns (uint32) {
+  function getTimeCoolDown() external view override returns (uint32) {
     return timeCooldown;
   }
 

@@ -6,7 +6,7 @@ interface IRelipaTreasure {
   event safeTransferEvent(address from, address to, uint256 treasureId, uint256 amount);
   event unboxEvent(address walletUnbox, uint256 amount);
 
-  function claimTreasure(uint256 amount) external;
+  function claimTreasure(uint256 amount, address to) external;
 
   function getBalanceOf(address account) external view returns (uint256);
 
@@ -20,4 +20,10 @@ interface IRelipaTreasure {
   function unbox(uint256 amount) external;
 
   function setNftAddress(address nftAddress) external;
+
+  function setURI(string memory newUri) external;
+
+  function getURI() external view returns (string memory);
+
+  function getNftAddress() external view returns (address);
 }

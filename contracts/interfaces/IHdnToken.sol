@@ -13,6 +13,12 @@ interface IHdnToken {
 
   function unpause() external;
 
+  function getBelanceOf(address account) external view returns (uint256);
+
+  function getTotalClaim() external view returns (uint256);
+
+  function getTotalSupply() external view returns (uint256);
+
   function claim(uint256 amount, address recieve) external;
 
   function resetTotalSupply(uint256 amount) external;

@@ -30,15 +30,15 @@ contract HdnToken is ERC20, Ownable, Pausable, AccessController, IHdnToken {
     emit UnpauseEvent(uint32(block.timestamp));
   }
 
-  function getBelanceOf(address account) external view returns (uint256) {
+  function getBelanceOf(address account) external view override returns (uint256) {
     return balanceOf(account);
   }
 
-  function getTotalClaim() external view returns (uint256) {
+  function getTotalClaim() external view override returns (uint256) {
     return _totalClaim;
   }
 
-  function getTotalSupply() external view returns (uint256) {
+  function getTotalSupply() external view override returns (uint256) {
     return _totalSupply;
   }
 
