@@ -46,6 +46,10 @@ contract BankMoney is Ownable, IBankMoney {
     return accountUser[_account].balanceOfToken[address(token)];
   }
 
+  function getTokenAddress() external view returns (address) {
+    return address(token);
+  }
+
   function getRecieveWallet() external view returns (address) {
     return recieveWallet;
   }
@@ -78,17 +82,32 @@ contract BankMoney is Ownable, IBankMoney {
   }
 
   function depositToken(uint256 amount) external override CheckAmount(amount) {
-    require(token.balanceOf(msg.sender) >= amount, "Your funds don't enough to deposit");
+    require(token.balanceOf(msg.sender) >= amount, 'Your funds do not enough to deposit');
     accountUser[msg.sender].balanceOfToken[address(token)] += amount;
     token.transferFrom(msg.sender, recieveWallet, amount);
     emit DepositTokenEvent(msg.sender, recieveWallet, amount, uint32(block.timestamp));
   }
 
+  function transferToken(uint256 amount, address to) external override CheckAmount(amount) {
+    require(
+      accountUser[msg.sender].balanceOfToken[address(token)] >= amount,
+      'Your fund in bank is not enough to transfer'
+    );
+    require(block.timestamp >= accountUser[msg.sender].readyTime, 'The next transfer is not yet');
+    require(token.balanceOf(recieveWallet) >= amount, 'Wallet of reciever is not enough token');
+
+    accountUser[msg.sender].balanceOfToken[address(token)] -= amount;
+    accountUser[to].balanceOfToken[address(token)] += amount;
+    accountUser[msg.sender].readyTime = uint32(block.timestamp + timeCooldown);
+    token.transferFrom(recieveWallet, to, amount);
+    emit TransferTokenEvent(recieveWallet, to, amount, uint32(block.timestamp));
+  }
+
   function withdrawToken(uint256 amount) external override CheckAmount(amount) {
     require(block.timestamp >= accountUser[msg.sender].readyTime, 'The next withdrawal is not yet');
     require(amount <= limitWithdrawToken, 'Max amount one time');
+    require(accountUser[msg.sender].balanceOfToken[address(token)] >= amount, 'You are not enough funds to withdraw');
     require(token.balanceOf(recieveWallet) >= amount, 'Wallet of reciever is not enough token');
-    require(accountUser[msg.sender].balanceOfToken[address(token)] >= amount, 'You are not enough funds to return');
 
     accountUser[msg.sender].balanceOfToken[address(token)] -= amount;
     accountUser[msg.sender].readyTime = uint32(block.timestamp + timeCooldown);
