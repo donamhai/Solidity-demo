@@ -115,17 +115,26 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     return tokenIds;
   }
 
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual override onlyOperator2 {
+    super._beforeTokenTransfer(from, to, tokenId);
+  }
+
   function transferNFT(
     address from,
     address to,
     uint256 tokenId
-  ) external override CheckAddress(from) CheckAddress(to) checkTokenId(tokenId) onlyOperator2 {
+  ) external override CheckAddress(from) CheckAddress(to) checkTokenId(tokenId) {
     require(balanceOf(from) > 0, 'not enough NFT to transfer');
     require(ownerOf(tokenId) == from, 'From address is not owner of NFT');
     _metadataOfTokenId[tokenId].ownerToken = to;
     _metadataOfTokenId[tokenId].discount = _discount;
     _metadataOfTokenId[tokenId].expireDate = uint32(block.timestamp + _timeExpireDate);
     safeTransferFrom(from, to, tokenId);
+
     emit TransferNFTEvent(from, to, tokenId, uint32(block.timestamp));
   }
 

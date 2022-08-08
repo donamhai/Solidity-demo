@@ -85,7 +85,7 @@ describe('Relipa NFT', function () {
       await expect(nft.claimToken(accountB.address)).to.be.revertedWith('Caller is not the operator1')
     })
     it('should claim token correctly', async () => {
-      const tx1 = await treasure.claimTreasure(2)
+      const tx1 = await treasure.claimTreasure(2, accountA.address)
       await tx1.wait()
       const tx2 = await treasure.unbox(1)
       const txReceipt2 = await tx2.wait()
@@ -106,7 +106,7 @@ describe('Relipa NFT', function () {
         [accountA.address, 2, timestamp3 + 9999],
       ])
 
-      const tx4 = await treasure.connect(accountB).claimTreasure(1)
+      const tx4 = await treasure.claimTreasure(1, accountB.address)
       await tx4.wait()
       const tx5 = await treasure.connect(accountB).unbox(1)
       const txReceipt5 = await tx5.wait()
@@ -129,7 +129,7 @@ describe('Relipa NFT', function () {
       await expect(treasure.unbox(0)).to.be.revertedWith('Please input amount greater than 0')
     })
     it('should claim batch token correctly', async () => {
-      const tx1 = await treasure.claimTreasure(3)
+      const tx1 = await treasure.claimTreasure(3, accountA.address)
       await tx1.wait()
       const tx2 = await treasure.unbox(3)
       const txReceipt2 = await tx2.wait()
@@ -144,7 +144,7 @@ describe('Relipa NFT', function () {
         [accountA.address, 2, timestamp2 + 9999],
       ])
 
-      const tx3 = await treasure.connect(accountB).claimTreasure(3)
+      const tx3 = await treasure.claimTreasure(3, accountB.address)
       await tx3.wait()
       const tx4 = await treasure.connect(accountB).unbox(3)
       const txReceipt4 = await tx4.wait()
@@ -179,7 +179,7 @@ describe('Relipa NFT', function () {
     it('should set base token URI correctly', async () => {
       const tx1 = await nft.setBaseTokenURI(uri)
       await tx1.wait()
-      const tx2 = await treasure.claimTreasure(2)
+      const tx2 = await treasure.claimTreasure(2, accountA.address)
       await tx2.wait()
       const tx3 = await treasure.unbox(2)
       await tx3.wait()
@@ -217,7 +217,7 @@ describe('Relipa NFT', function () {
       )
     })
     it('should revert if not operator', async () => {
-      const tx1 = await treasure.claimTreasure(1)
+      const tx1 = await treasure.claimTreasure(1, accountA.address)
       await tx1.wait()
       const tx2 = await treasure.unbox(1)
       await tx2.wait()
@@ -228,11 +228,11 @@ describe('Relipa NFT', function () {
     it('should revert if balance of from addess = 0', async () => {
       expect(await nft.balanceOf(accountA.address)).to.be.equal(0)
       await expect(marketplace.connect(accountB).addOrderNFT(1, hdntoken.address, 1000)).to.be.revertedWith(
-        'ERC721: invalid token ID'
+        'ERC721: owner query for nonexistent token'
       )
     })
     it('should revert if is not owner of NFT', async () => {
-      const tx1 = await treasure.claimTreasure(1)
+      const tx1 = await treasure.claimTreasure(1, accountA.address)
       await tx1.wait()
       const tx2 = await treasure.unbox(1)
       await tx2.wait()
@@ -241,17 +241,17 @@ describe('Relipa NFT', function () {
       )
     })
     it('should transfer NFT correctly', async () => {
-      const tx1 = await treasure.claimTreasure(3)
+      const tx1 = await treasure.claimTreasure(3, accountC.address)
       await tx1.wait()
-      const tx2 = await treasure.unbox(3)
+      const tx2 = await treasure.connect(accountC).unbox(3)
       await tx2.wait()
-      expect(await nft.balanceOf(accountA.address)).to.be.equal(3)
+      expect(await nft.balanceOf(accountC.address)).to.be.equal(3)
       expect(await nft.balanceOf(accountB.address)).to.be.equal(0)
-      expect(await nft.ownerOf(3)).to.be.equal(accountA.address)
+      expect(await nft.ownerOf(3)).to.be.equal(accountC.address)
 
-      const tx3 = await nft.approve(marketplace.address, 1)
+      const tx3 = await nft.connect(accountC).approve(marketplace.address, 1)
       await tx3.wait()
-      const tx4 = await marketplace.addOrderNFT(1, hdntoken.address, 1000)
+      const tx4 = await marketplace.connect(accountC).addOrderNFT(1, hdntoken.address, 1000)
       await tx4.wait()
       const tx5 = await hdntoken.claim(50000, accountB.address)
       await tx5.wait()
@@ -259,7 +259,7 @@ describe('Relipa NFT', function () {
       await tx6.wait()
       const tx7 = await marketplace.connect(accountB).buyOrderNFT(1)
       await tx7.wait()
-      expect(await nft.balanceOf(accountA.address)).to.be.equal(2)
+      expect(await nft.balanceOf(accountC.address)).to.be.equal(2)
       expect(await nft.balanceOf(accountB.address)).to.be.equal(1)
       expect(await nft.ownerOf(1)).to.be.equal(accountB.address)
     })
