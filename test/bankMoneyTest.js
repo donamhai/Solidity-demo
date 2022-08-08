@@ -1,7 +1,7 @@
 const { expect } = require('chai')
 const { ethers, network } = require('hardhat')
 
-describe('Bank money', function () {
+describe('Bank money', async () => {
   let [accountA, accountB, accountC, accountD] = []
   let bank
   let token
@@ -26,7 +26,7 @@ describe('Bank money', function () {
     await ApproveToken2.wait()
   })
 
-  describe('common', function () {
+  describe('common', async () => {
     it('getRecieveWallet should return right value', async () => {
       expect(await bank.getRecieveWallet()).to.be.equal(accountD.address)
     })
@@ -45,7 +45,7 @@ describe('Bank money', function () {
       expect(await bank.getBalanceOf(accountD.address)).to.be.equal(0)
     })
   })
-  describe('setRecieveWallet', function () {
+  describe('setRecieveWallet', async () => {
     it('should revert if address is zero address', async () => {
       await expect(bank.setRecieveWallet(address0)).to.be.revertedWith('Address can not be zero address')
     })
@@ -55,7 +55,7 @@ describe('Bank money', function () {
       expect(await bank.getRecieveWallet()).to.be.equal(accountB.address)
     })
   })
-  describe('setLimitWithdraw', function () {
+  describe('setLimitWithdraw', async () => {
     it('should revert if amount = 0', async () => {
       await expect(bank.setLimitWithdraw(0)).to.be.revertedWith('Limit Withdraw Token must be greater than 0')
     })
@@ -65,7 +65,7 @@ describe('Bank money', function () {
       expect(await bank.getlimitWithdraw()).to.be.equal(30000)
     })
   })
-  describe('setCooldownTime', function () {
+  describe('setCooldownTime', async () => {
     it('should revert if new time = 0', async () => {
       await expect(bank.setCooldownTime(0)).to.be.revertedWith('Please input new cooldown time > 0')
     })
@@ -75,7 +75,7 @@ describe('Bank money', function () {
       expect(await bank.getTimeCoolDown()).to.be.equal(15)
     })
   })
-  describe('changeToken', function () {
+  describe('changeToken', async () => {
     it('should revert if address is zero address', async () => {
       await expect(bank.changeToken(address0)).to.be.revertedWith('Address can not be zero address')
     })
@@ -95,7 +95,7 @@ describe('Bank money', function () {
       expect(await token1.balanceOf(accountC.address)).to.be.equal(10000)
     })
   })
-  describe('depositToken', function () {
+  describe('depositToken', async () => {
     it('should revert if amount = 0', async () => {
       await expect(bank.connect(accountB).depositToken(0)).to.be.revertedWith('Please input amount greater than 0')
     })
@@ -113,7 +113,7 @@ describe('Bank money', function () {
       expect(await bank.getBalanceOf(accountB.address)).to.be.equal(40000)
     })
   })
-  describe('transferToken', function () {
+  describe('transferToken', async () => {
     beforeEach(async () => {
       const deposit = await bank.connect(accountB).depositToken(40000)
       await deposit.wait()
@@ -157,7 +157,7 @@ describe('Bank money', function () {
       expect(await token.balanceOf(accountC.address)).to.be.equal(20000)
     })
   })
-  describe('withdrawToken', function () {
+  describe('withdrawToken', async () => {
     beforeEach(async () => {
       const deposit = await bank.connect(accountB).depositToken(40000)
       await deposit.wait()

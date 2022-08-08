@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '../interfaces/IRelipaNFT.sol';
 import './AccessController.sol';
+import './Marketplace.sol';
 
 contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, AccessController {
   using Counters for Counters.Counter;
@@ -16,6 +17,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   mapping(uint256 => Metadata) private _metadataOfTokenId;
   uint32 private _timeExpireDate;
   uint16 private _discount;
+  address private marketplaceAddress;
 
   modifier checkTokenId(uint256 tokenId) {
     require(tokenId > 0, 'Token id must be greater than 0');
@@ -65,7 +67,21 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     return allToken;
   }
 
-  function setBaseTokenURI(string memory baseTokenURI) public override onlyOwner {
+  function getMarketPlaceAddress() external view override returns (address) {
+    return marketplaceAddress;
+  }
+
+  function setMarketPlaceAddress(address _marketPlaceAddress)
+    external
+    override
+    CheckAddress(_marketPlaceAddress)
+    onlyOwner
+  {
+    require(Address.isContract(_marketPlaceAddress), 'You must input marketplace address');
+    marketplaceAddress = _marketPlaceAddress;
+  }
+
+  function setBaseTokenURI(string memory baseTokenURI) external override onlyOwner {
     require(bytes(baseTokenURI).length > 0, 'Please input base token URI');
     _baseTokenURI = baseTokenURI;
   }
@@ -80,7 +96,11 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     _discount = _newDiscount;
   }
 
-  function claimToken(address Receiver) external override CheckAddress(Receiver) onlyOperator1 returns (uint256) {
+  function _mint(address to, uint256 tokenId) internal virtual override onlyOperator {
+    super._mint(to, tokenId);
+  }
+
+  function claimToken(address Receiver) external override CheckAddress(Receiver) returns (uint256) {
     _tokenIdCount.increment();
     uint256 tokenId = _tokenIdCount.current();
     _metadataOfTokenId[tokenId].ownerToken = Receiver;
@@ -96,7 +116,6 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     external
     override
     CheckAddress(Receiver)
-    onlyOperator1
     returns (uint256[] memory)
   {
     require(amount > 0, 'amount must be greater than 0');
@@ -115,12 +134,15 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     return tokenIds;
   }
 
-  function _beforeTokenTransfer(
+  function _transfer(
     address from,
     address to,
     uint256 tokenId
-  ) internal virtual override onlyOperator2 {
-    super._beforeTokenTransfer(from, to, tokenId);
+  ) internal virtual override {
+    if (from == ownerOf(tokenId) && from != marketplaceAddress) {
+      require(to == marketplaceAddress, 'Cannot transfer to another address, exclude marketplace!');
+    }
+    super._transfer(from, to, tokenId);
   }
 
   function transferNFT(

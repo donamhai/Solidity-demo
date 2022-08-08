@@ -1,7 +1,7 @@
 const { expect } = require('chai')
 const { ethers } = require('hardhat')
 
-describe('HDN token', function () {
+describe('HDN token', async () => {
   let [accountA, accountB, accountC] = []
   let token
   let totalSupply = 400000
@@ -14,7 +14,7 @@ describe('HDN token', function () {
     await token.deployed()
   })
 
-  describe('common', function () {
+  describe('common', async () => {
     it("Name should be 'HDN Token'", async () => {
       const name = await token.name()
       expect(name).to.be.a.string
@@ -37,7 +37,7 @@ describe('HDN token', function () {
     })
   })
 
-  describe('claim', function () {
+  describe('claim', async () => {
     it('Claim should revert if not admin', async () => {
       await expect(token.connect(accountB).claim(100000, accountB.address)).to.be.revertedWith(
         'Ownable: caller is not the owner'
@@ -64,7 +64,7 @@ describe('HDN token', function () {
     })
   })
 
-  describe('resetTotalSupply', function () {
+  describe('resetTotalSupply', async () => {
     it('resetTotalSupply should be revert if amount < total claim + initial supply', async () => {
       const tx1 = await token.claim(100000, accountB.address)
       await tx1.wait()
@@ -79,7 +79,7 @@ describe('HDN token', function () {
     })
   })
 
-  describe('pause', function () {
+  describe('pause', async () => {
     it('should revert if not pause role', async () => {
       await expect(token.connect(accountB).pause()).to.be.reverted
     })
@@ -95,7 +95,7 @@ describe('HDN token', function () {
     })
   })
 
-  describe('unpause', function () {
+  describe('unpause', async () => {
     beforeEach(async () => {
       const tx = await token.pause()
       await tx.wait()
@@ -118,7 +118,7 @@ describe('HDN token', function () {
     })
   })
 
-  describe('addToBlackList', function () {
+  describe('addToBlackList', async () => {
     it('should revert in case add sender to backlist', async () => {
       await expect(token.addToBlackList(accountA.address)).ordered.be.revertedWith('Must not add sender to blacklist')
     })
@@ -137,7 +137,7 @@ describe('HDN token', function () {
     })
   })
 
-  describe('removeFromBlackList', function () {
+  describe('removeFromBlackList', async () => {
     beforeEach(async () => {
       const tx = await token.addToBlackList(accountB.address)
       await tx.wait()

@@ -7,10 +7,12 @@ import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
 import './RelipaNFT.sol';
 import '../interfaces/IRelipaTreasure.sol';
 import './AccessController.sol';
+import './Marketplace.sol';
 
 contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, AccessController {
   uint256 private constant RELIPA_TREASURE = 1;
   address private NFTaddress;
+  address private marketplaceAddress;
 
   modifier CheckAddress(address _address) {
     require(_address != address(0), 'Address can not be zero address');
@@ -28,6 +30,10 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
     NFTaddress = _NFTaddress;
   }
 
+  function getTreasureType() external pure returns (uint256) {
+    return RELIPA_TREASURE;
+  }
+
   function getBalanceOf(address account) external view override returns (uint256) {
     return balanceOf(account, RELIPA_TREASURE);
   }
@@ -38,6 +44,15 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
 
   function getNftAddress() external view override returns (address) {
     return NFTaddress;
+  }
+
+  function getMarketPlaceAddress() external view returns (address) {
+    return marketplaceAddress;
+  }
+
+  function setMarketPlaceAddress(address _marketPlaceAddress) external CheckAddress(_marketPlaceAddress) onlyOwner {
+    require(Address.isContract(_marketPlaceAddress), 'You must input marketplace address');
+    marketplaceAddress = _marketPlaceAddress;
   }
 
   function setURI(string memory newUri) external override onlyOwner {
@@ -55,12 +70,25 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
     emit claimTreasureEvent(to, RELIPA_TREASURE, amount);
   }
 
+  function _safeTransferFrom(
+    address from,
+    address to,
+    uint256 id,
+    uint256 amount,
+    bytes memory data
+  ) internal virtual override {
+    if (from != marketplaceAddress) {
+      require(to == marketplaceAddress, 'Cannot transfer to another address, exclude marketplace!');
+    }
+    super._safeTransferFrom(from, to, id, amount, data);
+  }
+
   function safeTransfer(
     address from,
     address to,
     uint256 treasureType,
     uint256 amount
-  ) public override CheckAddress(from) CheckAddress(to) CheckAmount(amount) onlyOperator2 {
+  ) public override CheckAddress(from) CheckAddress(to) CheckAmount(amount) {
     require(amount <= balanceOf(from, treasureType), "Amount must be less or equal than sender treasure's amount");
     _safeTransferFrom(from, to, treasureType, amount, '');
     emit safeTransferEvent(from, to, treasureType, amount);

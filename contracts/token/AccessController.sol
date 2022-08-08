@@ -13,29 +13,16 @@ contract AccessController is AccessControl {
     _;
   }
 
-  modifier onlyOperator1() {
+  modifier onlyOperator() {
     require(hasRole(OPERATOR1, _msgSender()), 'Caller is not the operator1');
     _;
   }
 
-  modifier onlyOperator2() {
-    require(hasRole(OPERATOR2, _msgSender()), 'Caller is not the operator2');
-    _;
-  }
-
-  function addOperator1(address _operator) external onlyAdmin {
+  function addOperator(address _operator) external onlyAdmin {
     _setupRole(OPERATOR1, _operator);
   }
 
-  function addOperator2(address _operator) external onlyAdmin {
-    _setupRole(OPERATOR2, _operator);
-  }
-
-  function removeOperator1(address _operator) external onlyAdmin {
+  function removeOperator(address _operator) external onlyAdmin {
     revokeRole(OPERATOR1, _operator);
-  }
-
-  function removeOperator2(address _operator) external onlyAdmin {
-    revokeRole(OPERATOR2, _operator);
   }
 }
