@@ -30,7 +30,7 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
     NFTaddress = _NFTaddress;
   }
 
-  function getTreasureType() external pure returns (uint256) {
+  function getTreasureType() external pure override returns (uint256) {
     return RELIPA_TREASURE;
   }
 
@@ -46,11 +46,16 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
     return NFTaddress;
   }
 
-  function getMarketPlaceAddress() external view returns (address) {
+  function getMarketPlaceAddress() external view override returns (address) {
     return marketplaceAddress;
   }
 
-  function setMarketPlaceAddress(address _marketPlaceAddress) external CheckAddress(_marketPlaceAddress) onlyOwner {
+  function setMarketPlaceAddress(address _marketPlaceAddress)
+    external
+    override
+    CheckAddress(_marketPlaceAddress)
+    onlyOwner
+  {
     require(Address.isContract(_marketPlaceAddress), 'You must input marketplace address');
     marketplaceAddress = _marketPlaceAddress;
   }

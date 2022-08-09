@@ -21,9 +21,17 @@ interface IRelipaTreasure {
 
   function setNftAddress(address nftAddress) external;
 
+  function setMarketPlaceAddress(address _marketPlaceAddress) external;
+
   function setURI(string memory newUri) external;
 
   function getURI() external view returns (string memory);
 
   function getNftAddress() external view returns (address);
+
+  function getTreasureType() external pure returns (uint256);
+
+  function getMarketPlaceAddress() external view returns (address)
+
+
 }

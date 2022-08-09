@@ -28,24 +28,8 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   uint256 private feeRate;
   address private recipient;
 
-  mapping(uint256 => OrderNFT) public orderOfNFT;
-  mapping(uint256 => OrderTreasure) public orderOfTreasure;
-
-  struct OrderNFT {
-    address seller;
-    uint256 nftId;
-    address paymentToken;
-    uint256 price;
-  }
-
-  struct OrderTreasure {
-    address seller;
-    uint256 treasureType;
-    address paymentToken;
-    uint256 price;
-    uint256 amount;
-    uint256 totalPrice;
-  }
+  mapping(uint256 => OrderNFT) private orderOfNFT;
+  mapping(uint256 => OrderTreasure) private orderOfTreasure;
 
   constructor(
     address nftAddress,
@@ -72,17 +56,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   }
 
   modifier onlySupportedPaymentToken(address paymentToken_) {
-    require(isPaymentTokenSupported(paymentToken_), 'NFTMarketplace: unsupport payment token');
-    _;
-  }
-
-  modifier canBuyNFT(uint256 orderId_, address buyer_) {
-    require(!isSellerNFT(orderId_, buyer_), 'NFTMarketplace: buyer must be different from seller');
-    _;
-  }
-
-  modifier canBuyTreasure(uint256 orderId_, address buyer_) {
-    require(!isSellerTreasure(orderId_, buyer_), 'NFTMarketplace: buyer must be different from seller');
+    require(_supportedPaymentTokens.contains(paymentToken_), 'NFTMarketplace: unsupport payment token');
     _;
   }
 
@@ -95,7 +69,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   }
 
   function _calculateFeeNFT(uint256 orderId_) private view returns (uint256) {
-    OrderNFT storage _order = orderOfNFT[orderId_];
+    OrderNFT memory _order = orderOfNFT[orderId_];
     if (feeRate == 0) {
       return 0;
     }
@@ -103,19 +77,11 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   }
 
   function _calculateFeeTreasure(uint256 orderId_) private view returns (uint256) {
-    OrderTreasure storage _order = orderOfTreasure[orderId_];
+    OrderTreasure memory _order = orderOfTreasure[orderId_];
     if (feeRate == 0) {
       return 0;
     }
     return (feeRate * _order.totalPrice) / 10**(feeDecimal + 2);
-  }
-
-  function isSellerNFT(uint256 orderId_, address seller_) private view returns (bool) {
-    return orderOfNFT[orderId_].seller == seller_;
-  }
-
-  function isSellerTreasure(uint256 orderId_, address seller_) private view returns (bool) {
-    return orderOfTreasure[orderId_].seller == seller_;
   }
 
   function addPaymentToken(address paymentToken_) external override onlyOwner {
@@ -123,17 +89,33 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     require(_supportedPaymentTokens.add(paymentToken_), 'NFTMarketplace: already supported');
   }
 
-  function isPaymentTokenSupported(address paymentToken_) private view returns (bool) {
-    return _supportedPaymentTokens.contains(paymentToken_);
-  }
-
-  function changeRecipient(address recipient_) external onlyOwner {
+  function setRecipientAddress(address recipient_) external override onlyOwner {
     require(recipient_ != address(0), 'NFTMarketplace: feeRecipient_ is zero address');
     recipient = recipient_;
   }
 
-  function updateFeeRate(uint256 feeDecimal_, uint256 feeRate_) external onlyOwner {
+  function setFeeRate(uint256 feeDecimal_, uint256 feeRate_) external override onlyOwner {
     _updateFeeRate(feeDecimal_, feeRate_);
+  }
+
+  function getRecipientAddress() external view override returns (address) {
+    return recipient;
+  }
+
+  function getFeeDecimal() external view override returns (uint256) {
+    return feeDecimal;
+  }
+
+  function getFeeRate() external view override returns (uint256) {
+    return feeRate;
+  }
+
+  function getOrderOfNFT(uint256 orderId) external view override returns (OrderNFT memory) {
+    return orderOfNFT[orderId];
+  }
+
+  function getOrderOfTreasure(uint256 orderId) external view override returns (OrderTreasure memory) {
+    return orderOfTreasure[orderId];
   }
 
   function addOrderNFT(
@@ -208,12 +190,13 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     emit OrderCancelled(orderId_);
   }
 
-  function buyOrderNFT(uint256 orderId_) external override checkOrderId(orderId_) canBuyNFT(orderId_, _msgSender()) {
+  function buyOrderNFT(uint256 orderId_) external override checkOrderId(orderId_) {
     OrderNFT memory _order = orderOfNFT[orderId_];
     uint256 _feeAmount = _calculateFeeNFT(orderId_);
     if (_feeAmount > 0) {
       IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), recipient, _feeAmount);
     }
+    require(orderOfNFT[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
 
     delete orderOfNFT[orderId_];
     IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), _order.seller, _order.price);
@@ -228,17 +211,14 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     );
   }
 
-  function buyOrderTreasure(uint256 orderId_)
-    external
-    override
-    checkOrderId(orderId_)
-    canBuyTreasure(orderId_, _msgSender())
-  {
+  function buyOrderTreasure(uint256 orderId_) external override checkOrderId(orderId_) {
     OrderTreasure memory _order = orderOfTreasure[orderId_];
     uint256 _feeAmount = _calculateFeeTreasure(orderId_);
     if (_feeAmount > 0) {
       IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), recipient, _feeAmount);
     }
+
+    require(orderOfTreasure[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
     delete orderOfTreasure[orderId_];
     IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), _order.seller, _order.totalPrice - _feeAmount);
     treasureContract.safeTransfer(address(this), _msgSender(), _order.treasureType, _order.amount);

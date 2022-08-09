@@ -2,6 +2,22 @@
 pragma solidity ^0.8.1;
 
 interface IMarketplace {
+  struct OrderNFT {
+    address seller;
+    uint256 nftId;
+    address paymentToken;
+    uint256 price;
+  }
+
+  struct OrderTreasure {
+    address seller;
+    uint256 treasureType;
+    address paymentToken;
+    uint256 price;
+    uint256 amount;
+    uint256 totalPrice;
+  }
+
   event OrderAdded(
     uint256 indexed orderId,
     address indexed seller,
@@ -42,4 +58,18 @@ interface IMarketplace {
   function buyOrderNFT(uint256 orderId_) external;
 
   function buyOrderTreasure(uint256 orderId_) external;
+
+  function setRecipientAddress(address recipient_) external;
+
+  function setFeeRate(uint256 feeDecimal_, uint256 feeRate_) external;
+
+  function getRecipientAddress() external view returns (address);
+
+  function getFeeDecimal() external view returns (uint256);
+
+  function getFeeRate() external view returns (uint256);
+
+  function getOrderOfNFT(uint256 orderId) external view returns (OrderNFT memory);
+
+  function getOrderOfTreasure(uint256 orderId) external view returns (OrderTreasure memory);
 }
