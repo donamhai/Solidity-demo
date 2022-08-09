@@ -72,6 +72,11 @@ describe('HDN token', async () => {
       await tx2.wait()
       await expect(token.resetTotalSupply(300000)).to.be.revertedWith('Total supply is too low')
     })
+    it('should revert if not role admin', async () => {
+      await expect(token.connect(accountB).resetTotalSupply(600000)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
+    })
     it('resetTotalSupply should work correctly', async () => {
       const tx = await token.resetTotalSupply(600000)
       await tx.wait()

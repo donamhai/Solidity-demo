@@ -58,6 +58,11 @@ describe('Relipa NFT', async () => {
     it('should revert if is not contract address', async () => {
       await expect(nft.setMarketPlaceAddress(accountB.address)).to.be.revertedWith('You must input marketplace address')
     })
+    it('should revert if not role admin', async () => {
+      await expect(nft.connect(accountB).setMarketPlaceAddress(marketplace.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
+    })
     it('should set marketplace address correctly', async () => {
       const tx1 = await nft.setMarketPlaceAddress(marketplace.address)
       await tx1.wait()
@@ -71,6 +76,9 @@ describe('Relipa NFT', async () => {
     })
     it('should revert if new time = 0', async () => {
       await expect(nft.setTimeExpireDate(0)).to.be.revertedWith('Please input new time expire date time > 0')
+    })
+    it('should revert if not role admin', async () => {
+      await expect(nft.connect(accountB).setTimeExpireDate(8888)).to.be.revertedWith('Ownable: caller is not the owner')
     })
     it('should set time expire date correctly', async () => {
       const tx1 = await nft.setTimeExpireDate(8888)
@@ -243,9 +251,9 @@ describe('Relipa NFT', async () => {
       )
     })
     it('should revert if balance of from addess = 0', async () => {
-      expect(await nft.balanceOf(accountA.address)).to.be.equal(0)
+      expect(await nft.balanceOf(accountB.address)).to.be.equal(0)
       await expect(marketplace.connect(accountB).addOrderNFT(1, hdntoken.address, 1000)).to.be.revertedWith(
-        'ERC721: invalid token ID'
+        'ERC721: owner query for nonexistent token'
       )
     })
     it('should revert if is not owner of NFT', async () => {

@@ -49,6 +49,11 @@ describe('Bank money', async () => {
     it('should revert if address is zero address', async () => {
       await expect(bank.setRecieveWallet(address0)).to.be.revertedWith('Address can not be zero address')
     })
+    it('should revert if not role admin', async () => {
+      await expect(bank.connect(accountB).setRecieveWallet(accountC.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
+    })
     it('should set recieve wallet correctly', async () => {
       const tx1 = await bank.setRecieveWallet(accountB.address)
       await tx1.wait()
@@ -59,6 +64,11 @@ describe('Bank money', async () => {
     it('should revert if amount = 0', async () => {
       await expect(bank.setLimitWithdraw(0)).to.be.revertedWith('Limit Withdraw Token must be greater than 0')
     })
+    it('should revert if not role admin', async () => {
+      await expect(bank.connect(accountB).setLimitWithdraw(30000)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
+    })
     it('should set limit withdraw correctly', async () => {
       const tx1 = await bank.setLimitWithdraw(30000)
       await tx1.wait()
@@ -68,6 +78,9 @@ describe('Bank money', async () => {
   describe('setCooldownTime', async () => {
     it('should revert if new time = 0', async () => {
       await expect(bank.setCooldownTime(0)).to.be.revertedWith('Please input new cooldown time > 0')
+    })
+    it('should revert if not role admin', async () => {
+      await expect(bank.connect(accountB).setCooldownTime(15)).to.be.revertedWith('Ownable: caller is not the owner')
     })
     it('should set cooldown time correctly', async () => {
       const tx1 = await bank.setCooldownTime(15)
@@ -81,6 +94,14 @@ describe('Bank money', async () => {
     })
     it('should revert if address is not contract address', async () => {
       await expect(bank.changeToken(accountB.address)).to.be.revertedWith('You must input token address')
+    })
+    it('should revert if not role admin', async () => {
+      const Token1 = await ethers.getContractFactory('HdnToken')
+      const token1 = await Token1.deploy()
+      await token1.deployed()
+      await expect(bank.connect(accountB).changeToken(token1.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
     })
     it('should chane token correctly', async () => {
       const Token1 = await ethers.getContractFactory('HdnToken')

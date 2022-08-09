@@ -56,7 +56,7 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
   }
 
   function setURI(string memory newUri) external override onlyOwner {
-    require(bytes(newUri).length > 0, 'Please input token URI');
+    require(bytes(newUri).length > 0, 'Please input treasure URI');
     _setURI(newUri);
   }
 
@@ -68,6 +68,22 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
   function claimTreasure(uint256 amount, address to) external override CheckAmount(amount) onlyOwner {
     _mint(to, RELIPA_TREASURE, amount, '');
     emit claimTreasureEvent(to, RELIPA_TREASURE, amount);
+  }
+
+  function unbox(uint256 amount) external override CheckAmount(amount) {
+    require(
+      amount <= balanceOf(msg.sender, RELIPA_TREASURE),
+      'Amount must be less or equal than sender treasure amount'
+    );
+    if (amount == 1) {
+      _burn(msg.sender, RELIPA_TREASURE, 1);
+      RelipaNFT(NFTaddress).claimToken(msg.sender);
+    } else {
+      _burn(msg.sender, RELIPA_TREASURE, amount);
+      RelipaNFT(NFTaddress).claimBatchToken(msg.sender, amount);
+    }
+
+    emit unboxEvent(msg.sender, amount);
   }
 
   function _safeTransferFrom(
@@ -83,31 +99,28 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
     super._safeTransferFrom(from, to, id, amount, data);
   }
 
+  function _safeBatchTransferFrom(
+    address from,
+    address to,
+    uint256[] memory ids,
+    uint256[] memory amounts,
+    bytes memory data
+  ) internal virtual override {
+    if (from != marketplaceAddress) {
+      require(to == marketplaceAddress, 'Cannot transfer to another address, exclude marketplace!');
+    }
+    super._safeBatchTransferFrom(from, to, ids, amounts, data);
+  }
+
   function safeTransfer(
     address from,
     address to,
     uint256 treasureType,
     uint256 amount
   ) public override CheckAddress(from) CheckAddress(to) CheckAmount(amount) {
-    require(amount <= balanceOf(from, treasureType), "Amount must be less or equal than sender treasure's amount");
+    require(amount <= balanceOf(from, treasureType), 'Amount must be less or equal than sender treasure amount');
     _safeTransferFrom(from, to, treasureType, amount, '');
     emit safeTransferEvent(from, to, treasureType, amount);
-  }
-
-  function unbox(uint256 amount) external override CheckAmount(amount) {
-    require(
-      amount <= balanceOf(msg.sender, RELIPA_TREASURE),
-      "Amount must be less or equal than sender treasure's amount"
-    );
-    if (amount == 1) {
-      _burn(msg.sender, RELIPA_TREASURE, 1);
-      RelipaNFT(NFTaddress).claimToken(msg.sender);
-    } else {
-      _burn(msg.sender, RELIPA_TREASURE, amount);
-      RelipaNFT(NFTaddress).claimBatchToken(msg.sender, amount);
-    }
-
-    emit unboxEvent(msg.sender, amount);
   }
 
   function supportsInterface(bytes4 interfaceId)
