@@ -148,7 +148,7 @@ describe('Relipa Treasure', async () => {
       hdntoken = await HdnToken.deploy()
       await hdntoken.deployed()
 
-      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
+      const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
       await MarketplaceAddress.wait()
       const addPaymentToken = await marketplace.addPaymentToken(hdntoken.address)
       await addPaymentToken.wait()
@@ -177,36 +177,42 @@ describe('Relipa Treasure', async () => {
       )
     })
     it('should revert if not transfer to market place', async () => {
-      await expect(treasure.safeTransfer(accountB.address, accountC.address, 1, 1)).to.be.revertedWith(
-        'Cannot transfer to another address, exclude marketplace!'
-      )
-      await expect(treasure.safeTransferFrom(accountB.address, accountC.address, 1, 1, '')).to.be.revertedWith(
-        'Cannot transfer to another address, exclude marketplace!'
-      )
-      // await expect(treasure.safeBatchTransferFrom(accountB.address, accountC.address, [1], [1], '')).to.be.revertedWith(
-      //   'Cannot transfer to another address, exclude marketplace!'
-      // )
+      await expect(
+        treasure.connect(accountB).safeTransfer(accountB.address, accountC.address, 1, 1)
+      ).to.be.revertedWith('Cannot transfer to another address, exclude marketplace!')
+      await expect(
+        treasure
+          .connect(accountB)
+          .safeTransferFrom(accountB.address, accountC.address, 1, 1, ethers.utils.formatBytes32String(''))
+      ).to.be.revertedWith('Cannot transfer to another address, exclude marketplace!')
+
+      await expect(
+        treasure
+          .connect(accountB)
+          .safeBatchTransferFrom(accountB.address, accountC.address, [1], [1], ethers.utils.formatBytes32String(''))
+      ).to.be.revertedWith('Cannot transfer to another address, exclude marketplace!')
     })
     it('should revert if balance of from addess = 0', async () => {
       expect(await treasure.getBalanceOf(accountC.address)).to.be.equal(0)
+      const tx1 = await treasure.connect(accountC).setApprovalForAll(marketplace.address, true)
+      await tx1.wait()
       await expect(marketplace.connect(accountC).addOrderTreasure(1, hdntoken.address, 1000, 1)).to.be.revertedWith(
-        'ERC721: owner query for nonexistent token'
+        'Amount must be less or equal than sender treasure amount'
       )
     })
     it('should transfer treasure correctly', async () => {
       expect(await treasure.getBalanceOf(accountC.address)).to.be.equal(0)
       expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
-
-      const tx3 = await treasure.connect(accountB).isApprovedForAll(accountB.address, marketplace.address)
+      const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
+      await tx1.wait()
+      const tx2 = await marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 2)
+      await tx2.wait()
+      const tx3 = await hdntoken.claim(50000, accountC.address)
       await tx3.wait()
-      const tx4 = await marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 2)
+      const tx4 = await hdntoken.connect(accountC).approve(marketplace.address, 50000)
       await tx4.wait()
-      const tx5 = await hdntoken.claim(50000, accountC.address)
+      const tx5 = await marketplace.connect(accountC).buyOrderTreasure(1)
       await tx5.wait()
-      const tx6 = await hdntoken.connect(accountC).approve(marketplace.address, 50000)
-      await tx6.wait()
-      const tx7 = await marketplace.connect(accountC).buyOrderTreasure(1)
-      await tx7.wait()
       expect(await treasure.getBalanceOf(accountC.address)).to.be.equal(2)
       expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(3)
     })
