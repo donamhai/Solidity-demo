@@ -31,7 +31,5 @@ interface IRelipaTreasure {
 
   function getTreasureType() external pure returns (uint256);
 
-  function getMarketPlaceAddress() external view returns (address)
-
-
+  function getMarketPlaceAddress() external view returns (address);
 }
