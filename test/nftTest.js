@@ -4,6 +4,7 @@ const { ethers } = require('hardhat')
 describe('Relipa NFT', async () => {
   let [accountA, accountB, accountC, accountD] = []
   let nft
+  let hdntoken
   let treasure
   let marketplace
   let address0 = '0x0000000000000000000000000000000000000000'
@@ -17,15 +18,23 @@ describe('Relipa NFT', async () => {
     nft = await NFT.deploy('9999', '2')
     await nft.deployed()
 
+    const HdnToken = await ethers.getContractFactory('HdnToken')
+    hdntoken = await HdnToken.deploy()
+    await hdntoken.deployed()
+
     const Treasure = await ethers.getContractFactory('RelipaTreasure')
     treasure = await Treasure.deploy('dantri.com', nft.address)
     await treasure.deployed()
+
     const setOperator = await nft.addOperator(treasure.address)
     await setOperator.wait()
 
     const MarketPlace = await ethers.getContractFactory('Marketplace')
-    marketplace = await MarketPlace.deploy(nft.address, treasure.address, 2, 2, accountD.address)
+    marketplace = await MarketPlace.deploy(nft.address, treasure.address, hdntoken.address, 2, 2, accountD.address)
     await marketplace.deployed()
+
+    const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
+    await MarketplaceAddress.wait()
   })
 
   describe('common', async () => {
@@ -216,17 +225,6 @@ describe('Relipa NFT', async () => {
   })
 
   describe('transferNFT', async () => {
-    let hdntoken
-    beforeEach(async () => {
-      const HdnToken = await ethers.getContractFactory('HdnToken')
-      hdntoken = await HdnToken.deploy()
-      await hdntoken.deployed()
-
-      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
-      await MarketplaceAddress.wait()
-      const addPaymentToken = await marketplace.addPaymentToken(hdntoken.address)
-      await addPaymentToken.wait()
-    })
     it('should revert if from address is zero address', async () => {
       await expect(nft.transferNFT(address0, accountB.address, 1)).to.be.revertedWith('Address can not be zero address')
     })
@@ -253,7 +251,7 @@ describe('Relipa NFT', async () => {
     it('should revert if balance of from addess = 0', async () => {
       expect(await nft.balanceOf(accountB.address)).to.be.equal(0)
       await expect(marketplace.connect(accountB).addOrderNFT(1, hdntoken.address, 1000)).to.be.revertedWith(
-        'ERC721: owner query for nonexistent token'
+        'ERC721: invalid token ID'
       )
     })
     it('should revert if is not owner of NFT', async () => {

@@ -34,6 +34,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   constructor(
     address nftAddress,
     address treasureAddress,
+    address paymentToken_,
     uint256 feeDecimal_,
     uint256 feeRate_,
     address recipient_
@@ -48,6 +49,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     treasureContract = RelipaTreasure(treasureAddress);
     recipient = recipient_;
     _updateFeeRate(feeDecimal_, feeRate_);
+    _supportedPaymentTokens.add(paymentToken_);
   }
 
   modifier checkOrderId(uint256 orderId) {
@@ -62,7 +64,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
 
   function _updateFeeRate(uint256 feeDecimal_, uint256 feeRate_) private {
     require(feeDecimal_ > 0 && feeRate_ > 0, 'Fee decimal or Fee rate must be greater than 0');
-    require(feeRate_ < 10**(feeDecimal_ + 2), 'NFTMarketplace: bad fee rate');
+    require(feeRate_ < 10**(feeDecimal_), 'NFTMarketplace: bad fee rate');
     feeDecimal = feeDecimal_;
     feeRate = feeRate_;
     emit feeRateUpdated(feeDecimal_, feeRate_);
