@@ -75,7 +75,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     if (feeRate == 0) {
       return 0;
     }
-    return (feeRate * _order.price) / 10**(feeDecimal + 2);
+    return (feeRate * _order.price) / 10**(feeDecimal);
   }
 
   function _calculateFeeTreasure(uint256 orderId_) private view returns (uint256) {
@@ -83,7 +83,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     if (feeRate == 0) {
       return 0;
     }
-    return (feeRate * _order.totalPrice) / 10**(feeDecimal + 2);
+    return (feeRate * _order.totalPrice) / 10**(feeDecimal);
   }
 
   function addPaymentToken(address paymentToken_) external override onlyOwner {
@@ -151,8 +151,8 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     uint256 price_,
     uint256 amount_
   ) external payable override onlySupportedPaymentToken(paymentToken_) {
-    require(treasureType_ > 0, 'Invalid treasureType');
-    require(amount_ > 0, 'amount must be greater than 0');
+    require(treasureType_ == 1, 'Invalid treasureType');
+    require(amount_ > 0, 'Amount must be greater than 0');
     require(
       treasureContract.isApprovedForAll(_msgSender(), address(this)),
       'NFTMarketplace: The contract is unauthorized to manage this token'
@@ -194,14 +194,14 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
 
   function buyOrderNFT(uint256 orderId_) external override checkOrderId(orderId_) {
     OrderNFT memory _order = orderOfNFT[orderId_];
+    require(orderOfNFT[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
     uint256 _feeAmount = _calculateFeeNFT(orderId_);
     if (_feeAmount > 0) {
       IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), recipient, _feeAmount);
     }
-    require(orderOfNFT[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
 
     delete orderOfNFT[orderId_];
-    IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), _order.seller, _order.price);
+    IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), _order.seller, _order.price - _feeAmount);
     nftContract.transferNFT(address(this), _msgSender(), _order.nftId);
     emit OrderMatched(
       orderId_,
@@ -215,12 +215,12 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
 
   function buyOrderTreasure(uint256 orderId_) external override checkOrderId(orderId_) {
     OrderTreasure memory _order = orderOfTreasure[orderId_];
+    require(orderOfTreasure[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
     uint256 _feeAmount = _calculateFeeTreasure(orderId_);
     if (_feeAmount > 0) {
       IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), recipient, _feeAmount);
     }
 
-    require(orderOfTreasure[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
     delete orderOfTreasure[orderId_];
     IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), _order.seller, _order.totalPrice - _feeAmount);
     treasureContract.safeTransfer(address(this), _msgSender(), _order.treasureType, _order.amount);

@@ -44,17 +44,17 @@ describe('Market Place', async () => {
     })
     it('getOrderOfNFT should return right value', async () => {
       expect(await marketplace.getOrderOfNFT(1)).to.be.eql([
-        '0x0000000000000000000000000000000000000000',
+        address0,
         ethers.BigNumber.from(0),
-        '0x0000000000000000000000000000000000000000',
+        address0,
         ethers.BigNumber.from(0),
       ])
     })
     it('getOrderOfTreasure should return right value', async () => {
       expect(await marketplace.getOrderOfTreasure(1)).to.be.eql([
-        '0x0000000000000000000000000000000000000000',
+        address0,
         ethers.BigNumber.from(0),
-        '0x0000000000000000000000000000000000000000',
+        address0,
         ethers.BigNumber.from(0),
         ethers.BigNumber.from(0),
         ethers.BigNumber.from(0),
@@ -135,6 +135,9 @@ describe('Market Place', async () => {
       const unbox = await treasure.connect(accountB).unbox(2)
       await unbox.wait()
       expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
+
+      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
+      await MarketplaceAddress.wait()
     })
     it('should revert if unsupport token payment', async () => {
       await expect(marketplace.connect(accountB).addOrderNFT(1, nft.address, 1000)).to.be.revertedWith(
@@ -179,12 +182,227 @@ describe('Market Place', async () => {
         ethers.BigNumber.from(1000),
       ])
       expect(await nft.balanceOf(accountB.address)).to.be.equal(1)
+      expect(await nft.ownerOf(1)).to.be.equal(marketplace.address)
     })
   })
-  describe('', async () => {})
-  describe('', async () => {})
-  describe('', async () => {})
-  describe('', async () => {})
-  describe('', async () => {})
-  describe('', async () => {})
+  describe('addOrderTreasure', async () => {
+    beforeEach(async () => {
+      const claimTreasure = await treasure.claimTreasure(5, accountB.address)
+      await claimTreasure.wait()
+      expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
+
+      const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
+      await MarketplaceAddress.wait()
+    })
+    it('should revert if unsupport token payment', async () => {
+      await expect(marketplace.connect(accountB).addOrderTreasure(1, nft.address, 1000, 3)).to.be.revertedWith(
+        'NFTMarketplace: unsupport payment token'
+      )
+    })
+    it('should revert if Invalid treasureType', async () => {
+      await expect(marketplace.connect(accountB).addOrderTreasure(2, hdntoken.address, 1000, 3)).to.be.revertedWith(
+        'Invalid treasureType'
+      )
+    })
+    it('should revert if amount = 0', async () => {
+      await expect(marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 0)).to.be.revertedWith(
+        'Amount must be greater than 0'
+      )
+    })
+    it('should revert if not approve treasure token', async () => {
+      await expect(marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 3)).to.be.revertedWith(
+        'NFTMarketplace: The contract is unauthorized to manage this token'
+      )
+    })
+    it('should revert if price = 0', async () => {
+      const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
+      await tx1.wait()
+      await expect(marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 0, 3)).to.be.revertedWith(
+        'NFTMarketplace: price must be greater than 0'
+      )
+    })
+    it('should add order treasure correctly', async () => {
+      const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
+      await tx1.wait()
+      const tx2 = await marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 3)
+      await tx2.wait()
+      expect(await marketplace.getOrderOfTreasure(1)).to.be.eql([
+        accountB.address,
+        ethers.BigNumber.from(1),
+        hdntoken.address,
+        ethers.BigNumber.from(1000),
+        ethers.BigNumber.from(3),
+        ethers.BigNumber.from(3000),
+      ])
+      expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(2)
+    })
+  })
+  describe('cancelOrderNFT', async () => {
+    beforeEach(async () => {
+      const claimTreasure = await treasure.claimTreasure(2, accountB.address)
+      await claimTreasure.wait()
+      const unbox = await treasure.connect(accountB).unbox(2)
+      await unbox.wait()
+      expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
+
+      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
+      await MarketplaceAddress.wait()
+
+      const tx1 = await nft.connect(accountB).approve(marketplace.address, 1)
+      await tx1.wait()
+      const tx2 = await marketplace.connect(accountB).addOrderNFT(1, hdntoken.address, 1000)
+      await tx2.wait()
+    })
+    it('should revert if orderId = 0', async () => {
+      await expect(marketplace.connect(accountB).cancelOrderNFT(0)).to.be.revertedWith(
+        'Order Id must be greater than 0'
+      )
+    })
+    it('should revert if not owner of order', async () => {
+      await expect(marketplace.connect(accountC).cancelOrderNFT(1)).to.be.revertedWith('NFTMarketplace: must be owner')
+    })
+    it('should cancel order NFT correctly', async () => {
+      const tx1 = await marketplace.connect(accountB).cancelOrderNFT(1)
+      await tx1.wait()
+      expect(await marketplace.getOrderOfNFT(1)).to.be.eql([
+        address0,
+        ethers.BigNumber.from(0),
+        address0,
+        ethers.BigNumber.from(0),
+      ])
+      expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
+      expect(await nft.ownerOf(1)).to.be.equal(accountB.address)
+    })
+  })
+  describe('cancelTreasureNFT', async () => {
+    beforeEach(async () => {
+      const claimTreasure = await treasure.claimTreasure(5, accountB.address)
+      await claimTreasure.wait()
+
+      expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
+
+      const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
+      await MarketplaceAddress.wait()
+
+      const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
+      await tx1.wait()
+      const tx2 = await marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 3)
+      await tx2.wait()
+    })
+    it('should revert if orderId = 0', async () => {
+      await expect(marketplace.connect(accountB).cancelOrderTreasure(0)).to.be.revertedWith(
+        'Order Id must be greater than 0'
+      )
+    })
+    it('should revert if not owner of order', async () => {
+      await expect(marketplace.connect(accountC).cancelOrderTreasure(1)).to.be.revertedWith(
+        'NFTMarketplace: must be owner'
+      )
+    })
+    it('should cancel order treasure correctly', async () => {
+      const tx1 = await marketplace.connect(accountB).cancelOrderTreasure(1)
+      await tx1.wait()
+      expect(await marketplace.getOrderOfTreasure(1)).to.be.eql([
+        address0,
+        ethers.BigNumber.from(0),
+        address0,
+        ethers.BigNumber.from(0),
+        ethers.BigNumber.from(0),
+        ethers.BigNumber.from(0),
+      ])
+      expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
+    })
+  })
+  describe('buyOrderNFT', async () => {
+    beforeEach(async () => {
+      const claimTreasure = await treasure.claimTreasure(2, accountB.address)
+      await claimTreasure.wait()
+      const unbox = await treasure.connect(accountB).unbox(2)
+      await unbox.wait()
+      expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
+
+      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
+      await MarketplaceAddress.wait()
+
+      const tx1 = await nft.connect(accountB).approve(marketplace.address, 1)
+      await tx1.wait()
+      const tx2 = await marketplace.connect(accountB).addOrderNFT(1, hdntoken.address, 1000)
+      await tx2.wait()
+
+      const tx3 = await hdntoken.claim(10000, accountC.address)
+      await tx3.wait()
+
+      const tx4 = await hdntoken.connect(accountC).approve(marketplace.address, 50000)
+      await tx4.wait()
+    })
+    it('should revert if orderId = 0', async () => {
+      await expect(marketplace.connect(accountC).buyOrderNFT(0)).to.be.revertedWith('Order Id must be greater than 0')
+    })
+    it('should revert if buyer is seller', async () => {
+      await expect(marketplace.connect(accountB).buyOrderNFT(1)).to.be.revertedWith(
+        'NFTMarketplace: buyer must be different from seller'
+      )
+    })
+    it('should buy order NFT correctly', async () => {
+      const tx1 = await marketplace.connect(accountC).buyOrderNFT(1)
+      await tx1.wait()
+
+      expect(await hdntoken.balanceOf(accountB.address)).to.be.equal(980)
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(20)
+      expect(await nft.balanceOf(accountC.address)).to.be.equal(1)
+      expect(await marketplace.getOrderOfNFT(1)).to.be.eql([
+        address0,
+        ethers.BigNumber.from(0),
+        address0,
+        ethers.BigNumber.from(0),
+      ])
+    })
+  })
+  describe('buyOrderTreasure', async () => {
+    beforeEach(async () => {
+      const claimTreasure = await treasure.claimTreasure(5, accountB.address)
+      await claimTreasure.wait()
+      expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
+
+      const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
+      await MarketplaceAddress.wait()
+
+      const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
+      await tx1.wait()
+      const tx2 = await marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 3)
+      await tx2.wait()
+
+      const tx3 = await hdntoken.claim(10000, accountC.address)
+      await tx3.wait()
+
+      const tx4 = await hdntoken.connect(accountC).approve(marketplace.address, 50000)
+      await tx4.wait()
+    })
+    it('should revert if orderId = 0', async () => {
+      await expect(marketplace.connect(accountC).buyOrderTreasure(0)).to.be.revertedWith(
+        'Order Id must be greater than 0'
+      )
+    })
+    it('should revert if buyer is seller', async () => {
+      await expect(marketplace.connect(accountB).buyOrderTreasure(1)).to.be.revertedWith(
+        'NFTMarketplace: buyer must be different from seller'
+      )
+    })
+    it('should buy order NFT correctly', async () => {
+      const tx1 = await marketplace.connect(accountC).buyOrderTreasure(1)
+      await tx1.wait()
+
+      expect(await hdntoken.balanceOf(accountB.address)).to.be.equal(2940)
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(60)
+      expect(await treasure.getBalanceOf(accountC.address)).to.be.equal(3)
+      expect(await marketplace.getOrderOfTreasure(1)).to.be.eql([
+        address0,
+        ethers.BigNumber.from(0),
+        address0,
+        ethers.BigNumber.from(0),
+        ethers.BigNumber.from(0),
+        ethers.BigNumber.from(0),
+      ])
+    })
+  })
 })
