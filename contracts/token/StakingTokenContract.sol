@@ -13,14 +13,14 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
   ERC20 token;
 
   //90 days staking (default 0.25% daily i.e. 22.5% APY in 90 days)
-  uint256 private _dailyAPY90 = 25;
-  uint32 constant periodStaking = 30;
+  uint256 private dailyAPY90 = 25;
+  uint32 constant periodStaking = 90;
   uint32 private timeCooldown = 10;
   address private recipient;
-  mapping(address => uint256) public totalStakesOfAddress;
-  mapping(address => mapping(uint256 => uint256)) public indexOfStakeOrderId;
-  mapping(address => mapping(uint256 => uint256)) public stakeOrderIdOfIndex;
-  mapping(uint256 => Stake) public stakeOfOrderId;
+  mapping(address => uint256) private totalStakesOfAddress;
+  mapping(address => mapping(uint256 => uint256)) private indexOfStakeOrderId;
+  mapping(address => mapping(uint256 => uint256)) private stakeOrderIdOfIndex;
+  mapping(uint256 => Stake) private stakeOfOrderId;
 
   struct Stake {
     address accountStaking;
@@ -53,37 +53,35 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     recipient = _recipient;
   }
 
-  function getDailyAPY90() external view onlyOwner returns (uint256) {
-    return _dailyAPY90;
+  function getDailyAPY90() external view override returns (uint256) {
+    return dailyAPY90;
   }
 
-  function getTimeCooldown() external view onlyOwner returns (uint32) {
+  function getPeriodStaking() external pure override returns (uint32) {
+    return periodStaking;
+  }
+
+  function getTimeCooldown() external view override returns (uint32) {
     return timeCooldown;
   }
 
-  function getRecipientAddress() external view onlyOwner returns (address) {
+  function getRecipientAddress() external view override returns (address) {
     return recipient;
   }
 
-  function changeDailyAPY90(uint256 _value) external override onlyOwner {
-    require(_value > 0, 'APY value has to be more than 0, try 30 for (0.3% daily) instead');
-    _dailyAPY90 = _value;
-  }
-
-  function changeRecipientAddress(address _recipient) external override CheckAddress(_recipient) onlyOwner {
-    recipient = _recipient;
-  }
-
-  function changeCooldownTime(uint32 _newCooldown) external override onlyOwner {
-    require(_newCooldown > 0, 'Please input new cooldown time > 0');
-    timeCooldown = _newCooldown;
-  }
-
-  function getBalanceOfRecipient() public view onlyOwner returns (uint256) {
+  function getBalanceOfRecipient() public view override returns (uint256) {
     return token.balanceOf(recipient);
   }
 
-  function stakeOfBalance(address _stakeholder) public view CheckAddress(_stakeholder) returns (uint256) {
+  function getTotalStakesOFAddress(address stakeHolder) external view returns (uint256) {
+    return totalStakesOfAddress[stakeHolder];
+  }
+
+  function getStakeOfOrderId(uint256 stakeId) external view returns (Stake memory) {
+    return stakeOfOrderId[stakeId];
+  }
+
+  function getStakeOfBalance(address _stakeholder) public view returns (uint256) {
     uint256 stakeOfAddress;
     uint256 arrayLength = totalStakesOfAddress[_stakeholder];
     for (uint256 i = 1; i <= arrayLength; i++) {
@@ -91,6 +89,20 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
       stakeOfAddress = stakeOfAddress + stakeAmount_;
     }
     return stakeOfAddress;
+  }
+
+  function setDailyAPY90(uint256 _value) external override onlyOwner {
+    require(_value > 0, 'APY value has to be more than 0, try 30 for (0.3% daily) instead');
+    dailyAPY90 = _value;
+  }
+
+  function setRecipientAddress(address _recipient) external override CheckAddress(_recipient) onlyOwner {
+    recipient = _recipient;
+  }
+
+  function setCooldownTime(uint32 _newCooldown) external override onlyOwner {
+    require(_newCooldown > 0, 'Please input new cooldown time > 0');
+    timeCooldown = _newCooldown;
   }
 
   function createStake90Days(uint256 _stakeAmount) external override CheckAmount(_stakeAmount) {
@@ -108,12 +120,12 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     _stake.stakedAmount = _stakeAmount;
     _stake.startDateStaking = uint32(block.timestamp);
     _stake.startDateReward = uint32(block.timestamp);
-    _stake.ratioStaking = _dailyAPY90;
+    _stake.ratioStaking = dailyAPY90;
     _stake.endDateStaking = uint32(block.timestamp) + periodStaking;
     _stake.readyTime = uint32(block.timestamp) + timeCooldown;
 
     token.transferFrom(msg.sender, recipient, _stakeAmount);
-    emit CreateStake(msg.sender, _stakeAmount, uint32(block.timestamp), periodStaking, _dailyAPY90, _stakeOrderId);
+    emit CreateStake(msg.sender, _stakeAmount, uint32(block.timestamp), periodStaking, dailyAPY90, _stakeOrderId);
   }
 
   function calculateTimeRemain(Stake memory _stake) private pure returns (uint32) {

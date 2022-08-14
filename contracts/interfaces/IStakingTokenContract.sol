@@ -16,11 +16,11 @@ interface IStakingTokenContract {
 
   function createStake90Days(uint256 _stakeAmount) external;
 
-  function changeDailyAPY90(uint256 _value) external;
+  function setDailyAPY90(uint256 _value) external;
 
-  function changeRecipientAddress(address _recipient) external;
+  function setRecipientAddress(address _recipient) external;
 
-  function changeCooldownTime(uint32 _newCooldown) external;
+  function setCooldownTime(uint32 _newCooldown) external;
 
   function calculateReward(uint256 _stakeOrder) external view returns (uint256);
 
@@ -29,4 +29,14 @@ interface IStakingTokenContract {
   function withdrawAllRewards() external;
 
   function releaseStake90Days(uint256 _stakeOrder) external;
+
+  function getDailyAPY90() external view returns (uint256);
+
+  function getPeriodStaking() external view returns (uint32);
+
+  function getTimeCooldown() external view returns (uint32);
+
+  function getRecipientAddress() external view returns (address);
+
+  function getBalanceOfRecipient() external view returns (uint256);
 }
