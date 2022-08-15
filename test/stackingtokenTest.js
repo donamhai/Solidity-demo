@@ -217,9 +217,28 @@ describe('Stacking token', async () => {
     })
   })
 
-  describe('', async () => {
-    it('', async () => {})
-    it('', async () => {})
+  describe('withdrawReward', async () => {
+    beforeEach(async () => {
+      const tx1 = await token.claim(100000, accountB.address)
+      await tx1.wait()
+
+      const tx2 = await token.connect(accountB).approve(stackingtoken.address, 100000)
+      await tx2.wait()
+
+      const tx3 = await stackingtoken.connect(accountB).createStake90Days(5000)
+      await tx3.wait()
+    })
+    it('should return if orderId = 0', async () => {
+      await expect(stackingtoken.connect(accountB).withdrawReward(0)).to.be.revertedWith(
+        'StakeOrder must be greater than 0'
+      )
+    })
+    it('should revert if time of next withdrawl is not yet', async () => {
+      await expect(stackingtoken.connect(accountB).withdrawReward(1)).to.be.revertedWith(
+        'The next withdrawal is not yet'
+      )
+    })
+    it('should revert if balance of recipient is not enough to pay reward', async () => {})
     it('', async () => {})
     it('', async () => {})
   })
