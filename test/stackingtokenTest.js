@@ -227,10 +227,28 @@ describe('Stacking token', async () => {
 
       const tx3 = await stackingtoken.connect(accountB).createStake90Days(5000)
       await tx3.wait()
+
+      const tx4 = await token.connect(accountD).approve(stackingtoken.address, 100000)
+      await tx4.wait()
     })
     it('should return if orderId = 0', async () => {
       await expect(stackingtoken.connect(accountB).withdrawReward(0)).to.be.revertedWith(
         'StakeOrder must be greater than 0'
+      )
+    })
+    it('should return if not owner of stake', async () => {
+      await network.provider.send('evm_increaseTime', [15])
+      const tx1 = await token.claim(100000, accountC.address)
+      await tx1.wait()
+
+      const tx2 = await token.connect(accountC).approve(stackingtoken.address, 100000)
+      await tx2.wait()
+
+      const tx3 = await stackingtoken.connect(accountC).createStake90Days(5000)
+      await tx3.wait()
+
+      await expect(stackingtoken.connect(accountC).withdrawReward(1)).to.be.revertedWith(
+        'You are not owner of stake order'
       )
     })
     it('should revert if time of next withdrawl is not yet', async () => {
@@ -238,20 +256,171 @@ describe('Stacking token', async () => {
         'The next withdrawal is not yet'
       )
     })
-    it('should revert if balance of recipient is not enough to pay reward', async () => {})
-    it('', async () => {})
-    it('', async () => {})
+    it('should revert if balance of recipient is not enough to pay reward', async () => {
+      const tx1 = await token.connect(accountD).transfer(accountC.address, 5000)
+      await tx1.wait()
+
+      await network.provider.send('evm_increaseTime', [15])
+      await expect(stackingtoken.connect(accountB).withdrawReward(1)).to.be.revertedWith(
+        'Balance is not enough to pay reward'
+      )
+    })
+    it('should revert if reward = 0', async () => {
+      await network.provider.send('evm_increaseTime', [100])
+      const tx1 = await stackingtoken.connect(accountB).withdrawReward(1)
+      await tx1.wait()
+
+      await network.provider.send('evm_increaseTime', [11])
+      await expect(stackingtoken.connect(accountB).withdrawReward(1)).to.be.revertedWith(
+        'You dont have any reward to withdraw'
+      )
+    })
+
+    it('should withdraw reward correctly', async () => {
+      await network.provider.send('evm_increaseTime', [15])
+      const tx1 = await stackingtoken.connect(accountB).withdrawReward(1)
+      await tx1.wait()
+
+      expect(await token.balanceOf(accountB.address)).to.be.equal(95192)
+      expect(await token.balanceOf(accountD.address)).to.be.equal(4808)
+
+      await network.provider.send('evm_increaseTime', [100])
+      const tx2 = await stackingtoken.connect(accountB).withdrawReward(1)
+      await tx2.wait()
+
+      expect(await token.balanceOf(accountB.address)).to.be.equal(96080)
+      expect(await token.balanceOf(accountD.address)).to.be.equal(3920)
+
+      await network.provider.send('evm_increaseTime', [11])
+      await expect(stackingtoken.connect(accountB).withdrawReward(1)).to.be.revertedWith(
+        'You dont have any reward to withdraw'
+      )
+    })
   })
-  describe('', async () => {
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
+  describe('withdrawAllRewards', async () => {
+    beforeEach(async () => {
+      const tx1 = await token.claim(100000, accountB.address)
+      await tx1.wait()
+
+      const tx2 = await token.connect(accountB).approve(stackingtoken.address, 100000)
+      await tx2.wait()
+
+      const tx3 = await stackingtoken.connect(accountB).createStake90Days(5000)
+      await tx3.wait()
+
+      const tx4 = await stackingtoken.connect(accountB).createStake90Days(6000)
+      await tx4.wait()
+
+      const tx5 = await stackingtoken.connect(accountB).createStake90Days(7000)
+      await tx5.wait()
+
+      const tx6 = await token.connect(accountD).approve(stackingtoken.address, 100000)
+      await tx6.wait()
+    })
+    it('should revert if not stacking', async () => {
+      await expect(stackingtoken.connect(accountC).withdrawAllRewards()).to.be.revertedWith('You are not staking')
+    })
+    it('should revert if time of next withdrawl is not yet', async () => {
+      await expect(stackingtoken.connect(accountB).withdrawAllRewards()).to.be.revertedWith(
+        'The next withdrawal is not yet'
+      )
+    })
+    it('should revert if balance of recipient is not enough to pay reward', async () => {
+      const tx1 = await token.connect(accountD).transfer(accountC.address, 18000)
+      await tx1.wait()
+
+      await network.provider.send('evm_increaseTime', [15])
+      await expect(stackingtoken.connect(accountB).withdrawAllRewards()).to.be.revertedWith(
+        'Balance is not enough to pay reward'
+      )
+    })
+    it('should revert if all reward = 0', async () => {
+      await network.provider.send('evm_increaseTime', [100])
+      const tx1 = await stackingtoken.connect(accountB).withdrawAllRewards()
+      await tx1.wait()
+      await network.provider.send('evm_increaseTime', [10])
+      await expect(stackingtoken.connect(accountB).withdrawAllRewards()).to.be.revertedWith(
+        'You dont have any reward to withdraw'
+      )
+    })
+    it('should withdraw all reward correctly', async () => {
+      await network.provider.send('evm_increaseTime', [15])
+      const tx1 = await stackingtoken.connect(accountB).withdrawAllRewards()
+      await tx1.wait()
+
+      expect(await token.balanceOf(accountB.address)).to.be.equal(82743)
+      expect(await token.balanceOf(accountD.address)).to.be.equal(17257)
+
+      await network.provider.send('evm_increaseTime', [100])
+      const tx2 = await stackingtoken.connect(accountB).withdrawAllRewards()
+      await tx2.wait()
+
+      expect(await token.balanceOf(accountB.address)).to.be.equal(85960)
+      expect(await token.balanceOf(accountD.address)).to.be.equal(14040)
+
+      await network.provider.send('evm_increaseTime', [10])
+      await expect(stackingtoken.connect(accountB).withdrawAllRewards()).to.be.revertedWith(
+        'You dont have any reward to withdraw'
+      )
+    })
   })
-  describe('', async () => {
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
+  describe('releaseStake90Days', async () => {
+    beforeEach(async () => {
+      const tx1 = await token.claim(100000, accountB.address)
+      await tx1.wait()
+
+      const tx2 = await token.connect(accountB).approve(stackingtoken.address, 100000)
+      await tx2.wait()
+
+      const tx3 = await stackingtoken.connect(accountB).createStake90Days(5000)
+      await tx3.wait()
+
+      const tx4 = await stackingtoken.connect(accountB).createStake90Days(6000)
+      await tx4.wait()
+
+      const tx5 = await token.connect(accountD).approve(stackingtoken.address, 100000)
+      await tx5.wait()
+    })
+    it('should return if orderId = 0', async () => {
+      await expect(stackingtoken.connect(accountB).releaseStake90Days(0)).to.be.revertedWith(
+        'StakeOrder must be greater than 0'
+      )
+    })
+    it('should revert if not stacking', async () => {
+      await expect(stackingtoken.connect(accountC).releaseStake90Days(1)).to.be.revertedWith('You are not staking')
+    })
+    it('should return if time release stake is not enough', async () => {
+      await expect(stackingtoken.connect(accountB).releaseStake90Days(1)).to.be.revertedWith(
+        'Time release stake is not enough'
+      )
+    })
+    it('should return if balance of recipient is not enough to release stake', async () => {
+      const tx1 = await token.connect(accountD).transfer(accountC.address, 10000)
+      await tx1.wait()
+
+      await network.provider.send('evm_increaseTime', [100])
+      await expect(stackingtoken.connect(accountB).releaseStake90Days(1)).to.be.revertedWith(
+        'Balance of recipient is not enough to release stake'
+      )
+    })
+    it('should release stake 90day correctly', async () => {
+      expect(await stackingtoken.getTotalStakesOFAddress(accountB.address)).to.be.equal(2)
+      await network.provider.send('evm_increaseTime', [100])
+      const tx1 = await stackingtoken.connect(accountB).releaseStake90Days(1)
+      await tx1.wait()
+
+      expect(await stackingtoken.getTotalStakesOFAddress(accountB.address)).to.be.equal(1)
+      expect(await token.balanceOf(accountB.address)).to.be.equal(95080)
+      expect(await token.balanceOf(accountD.address)).to.be.equal(4920)
+      expect(await stackingtoken.getStakeOfOrderId(1)).to.be.eql([
+        address0,
+        ethers.BigNumber.from(0),
+        ethers.BigNumber.from(0),
+        0,
+        0,
+        0,
+        0,
+      ])
+    })
   })
 })

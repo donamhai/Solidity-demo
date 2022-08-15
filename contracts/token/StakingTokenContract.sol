@@ -160,6 +160,7 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     require(block.timestamp >= stakeOfOrderId[_stakeOrderId].readyTime, 'The next withdrawal is not yet');
     uint256 reward = calculateReward(_stakeOrderId);
     require(token.balanceOf(recipient) >= reward, 'Balance is not enough to pay reward');
+    require(reward > 0, 'You dont have any reward to withdraw');
     stakeOfOrderId[_stakeOrderId].startDateReward = uint32(block.timestamp);
     stakeOfOrderId[_stakeOrderId].readyTime = uint32(block.timestamp) + timeCooldown;
     token.transferFrom(recipient, msg.sender, reward);
@@ -180,6 +181,7 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
       stakeOfOrderId[stakeOrderIdOfIndex[msg.sender][i]].readyTime = uint32(block.timestamp) + timeCooldown;
     }
     require(token.balanceOf(recipient) >= allReward, 'Balance is not enough to pay reward');
+    require(allReward > 0, 'You dont have any reward to withdraw');
     token.transferFrom(recipient, msg.sender, allReward);
     emit recieveAllReward(msg.sender, allReward, uint32(block.timestamp));
   }
