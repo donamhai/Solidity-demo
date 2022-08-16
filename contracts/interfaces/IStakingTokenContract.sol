@@ -2,6 +2,16 @@
 pragma solidity ^0.8.1;
 
 interface IStakingTokenContract {
+  struct Stake {
+    address accountStaking;
+    uint256 stakedAmount;
+    uint256 ratioStaking;
+    uint32 startDateStaking;
+    uint32 startDateReward;
+    uint32 endDateStaking;
+    uint32 readyTime;
+  }
+
   event CreateStake(
     address accountStaking,
     uint256 _stakeAmount,
@@ -22,8 +32,6 @@ interface IStakingTokenContract {
 
   function setCooldownTime(uint32 _newCooldown) external;
 
-  function calculateReward(uint256 _stakeOrder) external view returns (uint256);
-
   function withdrawReward(uint256 _stakeOrder) external;
 
   function withdrawAllRewards() external;
@@ -39,4 +47,10 @@ interface IStakingTokenContract {
   function getRecipientAddress() external view returns (address);
 
   function getBalanceOfRecipient() external view returns (uint256);
+
+  function getTotalStakesOFAddress(address stakeHolder) external view returns (uint256);
+
+  function getStakeOfOrderId(uint256 stakeId) external view returns (Stake memory);
+
+  function getStakeOfBalance(address _stakeholder) external view returns (uint256);
 }

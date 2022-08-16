@@ -174,48 +174,6 @@ describe('Stacking token', async () => {
       ])
     })
   })
-  describe('calculateReward', async () => {
-    beforeEach(async () => {
-      const tx1 = await token.claim(100000, accountB.address)
-      await tx1.wait()
-
-      const tx2 = await token.connect(accountB).approve(stackingtoken.address, 100000)
-      await tx2.wait()
-
-      const tx3 = await stackingtoken.connect(accountB).createStake90Days(5000)
-      await tx3.wait()
-    })
-    it('should return if orderId = 0', async () => {
-      await expect(stackingtoken.connect(accountB).calculateReward(0)).to.be.revertedWith(
-        'StakeOrder must be greater than 0'
-      )
-    })
-    it('should return if total stake of address = 0', async () => {
-      await expect(stackingtoken.connect(accountC).calculateReward(1)).to.be.revertedWith('You are not staking')
-    })
-    it('should return if not owner of stake', async () => {
-      const tx1 = await token.claim(100000, accountC.address)
-      await tx1.wait()
-
-      const tx2 = await token.connect(accountC).approve(stackingtoken.address, 100000)
-      await tx2.wait()
-
-      const tx3 = await stackingtoken.connect(accountC).createStake90Days(5000)
-      await tx3.wait()
-      await expect(stackingtoken.connect(accountC).calculateReward(1)).to.be.revertedWith(
-        'You are not owner of stake order'
-      )
-    })
-    it('should calculate reward correctly', async () => {
-      await network.provider.send('evm_increaseTime', [15])
-      expect(await stackingtoken.connect(accountB).calculateReward(1)).to.be.equal(444)
-      expect(await token.balanceOf(accountB.address)).to.be.equal()
-      expect(await token.balanceOf(accountD.address)).to.be.equal()
-      console.log(await stackingtoken.connect(accountB).calculateReward(1))
-      await network.provider.send('evm_increaseTime', [30])
-      expect(await stackingtoken.connect(accountB).calculateReward(1)).to.be.equal(0)
-    })
-  })
 
   describe('withdrawReward', async () => {
     beforeEach(async () => {

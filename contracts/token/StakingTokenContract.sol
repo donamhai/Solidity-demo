@@ -22,16 +22,6 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
   mapping(address => mapping(uint256 => uint256)) private stakeOrderIdOfIndex;
   mapping(uint256 => Stake) private stakeOfOrderId;
 
-  struct Stake {
-    address accountStaking;
-    uint256 stakedAmount;
-    uint256 ratioStaking;
-    uint32 startDateStaking;
-    uint32 startDateReward;
-    uint32 endDateStaking;
-    uint32 readyTime;
-  }
-
   modifier CheckAddress(address _address) {
     require(_address != address(0), 'Address can not be zero address');
     _;
@@ -69,19 +59,19 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     return recipient;
   }
 
-  function getBalanceOfRecipient() public view override returns (uint256) {
+  function getBalanceOfRecipient() external view override returns (uint256) {
     return token.balanceOf(recipient);
   }
 
-  function getTotalStakesOFAddress(address stakeHolder) external view returns (uint256) {
+  function getTotalStakesOFAddress(address stakeHolder) external view override returns (uint256) {
     return totalStakesOfAddress[stakeHolder];
   }
 
-  function getStakeOfOrderId(uint256 stakeId) external view returns (Stake memory) {
+  function getStakeOfOrderId(uint256 stakeId) external view override returns (Stake memory) {
     return stakeOfOrderId[stakeId];
   }
 
-  function getStakeOfBalance(address _stakeholder) public view returns (uint256) {
+  function getStakeOfBalance(address _stakeholder) external view override returns (uint256) {
     uint256 stakeOfAddress;
     uint256 arrayLength = totalStakesOfAddress[_stakeholder];
     for (uint256 i = 1; i <= arrayLength; i++) {
@@ -138,13 +128,7 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     return _stake.endDateStaking - lastTime;
   }
 
-  function calculateReward(uint256 _stakeOrderId)
-    public
-    view
-    override
-    CheckStakeOrder(_stakeOrderId)
-    returns (uint256)
-  {
+  function calculateReward(uint256 _stakeOrderId) private view CheckStakeOrder(_stakeOrderId) returns (uint256) {
     require(totalStakesOfAddress[msg.sender] > 0, 'You are not staking');
     Stake memory _stake = stakeOfOrderId[_stakeOrderId];
     require(_stake.accountStaking == msg.sender, 'You are not owner of stake order');
