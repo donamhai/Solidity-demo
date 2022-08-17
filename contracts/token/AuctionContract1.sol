@@ -19,10 +19,11 @@ không đặt đấu giá cộng dồn
 contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
   using Counters for Counters.Counter;
   Counters.Counter private _auctionOrderIdCount;
-  ERC20 token;
-  RelipaNFT private nftContract;
+
   uint16 private feeRate;
   address private recipient;
+  address private token;
+  address private nftContract;
   mapping(address => uint256) private totalAuctionsOfOwner;
   mapping(address => mapping(uint256 => uint256)) private indexOfAuctionId;
   mapping(address => mapping(uint256 => uint256)) private auctionIdOfIndex;
@@ -51,15 +52,15 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
   }
 
   constructor(
-    address tokenStake,
-    address nftAddress,
+    address _token,
+    address _nftAddress,
     address _recipient,
     uint16 _feeRate
-  ) CheckAddress(tokenStake) CheckAddress(_recipient) {
-    require(Address.isContract(tokenStake) && Address.isContract(nftAddress), 'You must input contract address');
+  ) CheckAddress(_token) CheckAddress(_recipient) {
+    require(Address.isContract(_token) && Address.isContract(_nftAddress), 'You must input contract address');
     require(0 < _feeRate && _feeRate < 100, 'Fee Rate must among 0 to 100');
-    token = ERC20(tokenStake);
-    nftContract = RelipaNFT(nftAddress);
+    token = _token;
+    nftContract = _nftAddress;
     recipient = _recipient;
     feeRate = _feeRate;
   }
@@ -92,7 +93,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
   }
 
   function getBalanceOfRecipient() external view returns (uint256) {
-    return token.balanceOf(recipient);
+    return ERC20(token).balanceOf(recipient);
   }
 
   function getTotalAuctionsOfOwner(address ownerAution) external view returns (uint256) {
@@ -118,9 +119,10 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     uint32 _duration
   ) external override {
     require(_nftTokenId > 0, 'Invalid tokenId');
-    require(nftContract.ownerOf(_nftTokenId) == msg.sender, 'Sender is not owner of token');
+    require(RelipaNFT(nftContract).ownerOf(_nftTokenId) == msg.sender, 'Sender is not owner of token');
     require(
-      nftContract.getApproved(_nftTokenId) == address(this) || nftContract.isApprovedForAll(msg.sender, address(this)),
+      RelipaNFT(nftContract).getApproved(_nftTokenId) == address(this) ||
+        RelipaNFT(nftContract).isApprovedForAll(msg.sender, address(this)),
       'The contract is unauthorized to manage this token'
     );
     require(_startPrice >= 1000, 'Price must be greater than 1000');
@@ -142,7 +144,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     _order.auction_duration = _duration;
     _order.auction_end = uint32(block.timestamp + _duration);
 
-    nftContract.transferNFT(msg.sender, address(this), _nftTokenId);
+    RelipaNFT(nftContract).transferNFT(msg.sender, address(this), _nftTokenId);
     emit CreateAuctionEvent(msg.sender, _auctionId, _nftTokenId, uint32(block.timestamp), _startPrice, _duration);
   }
 
@@ -158,14 +160,14 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
       fundsByBidder[msg.sender][_auctionOrderId] == 0,
       'You have bidden this auction, please withdraw your money before bidding again'
     );
-    require(token.balanceOf(msg.sender) >= _bidAmount, 'Balance of bidder is not enough to bid this auction');
+    require(ERC20(token).balanceOf(msg.sender) >= _bidAmount, 'Balance of bidder is not enough to bid this auction');
     require(_bidAmount > _order.startPrice, 'You must bid greater than start price');
     require(_bidAmount > _order.highestBid, 'There is already a higher or equal bid');
 
     _order.highestBidder = msg.sender;
     _order.highestBid = _bidAmount;
     fundsByBidder[msg.sender][_auctionOrderId] = _bidAmount;
-    token.transferFrom(msg.sender, recipient, _bidAmount);
+    ERC20(token).transferFrom(msg.sender, recipient, _bidAmount);
     emit BidAuctionEvent(msg.sender, _auctionOrderId, _bidAmount, uint32(block.timestamp));
   }
 
@@ -174,14 +176,14 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     require(fundsByBidder[msg.sender][_auctionOrderId] > 0, "You don't bid this auction");
     require(_order.highestBidder != msg.sender, "Your bid is the highest price, can't withdraw");
     require(
-      token.balanceOf(recipient) >= fundsByBidder[msg.sender][_auctionOrderId],
+      ERC20(token).balanceOf(recipient) >= fundsByBidder[msg.sender][_auctionOrderId],
       'Balance of Auction Market not enough to withdraw'
     );
 
     uint256 withdrawAmount = fundsByBidder[msg.sender][_auctionOrderId];
     fundsByBidder[msg.sender][_auctionOrderId] = 0;
 
-    token.transferFrom(recipient, msg.sender, withdrawAmount);
+    ERC20(token).transferFrom(recipient, msg.sender, withdrawAmount);
     emit WithdrawEvent(msg.sender, _auctionOrderId, withdrawAmount);
   }
 
@@ -203,7 +205,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     require(block.timestamp < _order.auction_end, 'The auction has already ended');
     require(_order.ownerNFT == msg.sender, 'You are not owner of this auction');
     require(
-      token.balanceOf(msg.sender) >= _order.startPrice,
+      ERC20(token).balanceOf(msg.sender) >= _order.startPrice,
       'If you cancel the auction, the starting price of auction will be lost'
     );
 
@@ -212,8 +214,8 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
 
     removeAuction(_auctionOrderId);
 
-    token.transferFrom(msg.sender, recipient, feePenalty);
-    nftContract.transferNFT(address(this), msg.sender, tokenNFT);
+    ERC20(token).transferFrom(msg.sender, recipient, feePenalty);
+    RelipaNFT(nftContract).transferNFT(address(this), msg.sender, tokenNFT);
     emit CancelAuctionEvent(msg.sender, _auctionOrderId, feePenalty, uint32(block.timestamp));
   }
 
@@ -228,7 +230,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     uint256 _nftTokenId = _order.nftTokenId;
     uint32 _auction_end = _order.auction_end;
     uint256 amountPayment = _order.highestBid - ((_order.highestBid * feeRate) / 100);
-    require(token.balanceOf(recipient) >= amountPayment, 'Balance of Auction Market not enough to withdraw');
+    require(ERC20(token).balanceOf(recipient) >= amountPayment, 'Balance of Auction Market not enough to withdraw');
 
     if (_order.highestBidder == address(0)) {
       _highestBidder = msg.sender;
@@ -236,8 +238,8 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
 
     removeAuction(_auctionOrderId);
 
-    nftContract.transferNFT(address(this), _highestBidder, _nftTokenId);
-    token.transferFrom(recipient, msg.sender, amountPayment);
+    RelipaNFT(nftContract).transferNFT(address(this), _highestBidder, _nftTokenId);
+    ERC20(token).transferFrom(recipient, msg.sender, amountPayment);
     emit CloseAuctionEvent(msg.sender, _auctionOrderId, _highestBidder, _highestBid, _auction_end);
   }
 }
