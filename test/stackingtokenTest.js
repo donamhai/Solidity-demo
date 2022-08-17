@@ -30,6 +30,9 @@ describe('Stacking token', async () => {
     it('getRecipientAddress should return right value', async () => {
       expect(await stackingtoken.getRecipientAddress()).to.be.equal(accountD.address)
     })
+    it('getTokenAddress should return right value', async () => {
+      expect(await stackingtoken.getTokenAddress()).to.be.equal(token.address)
+    })
     it('getBalanceOfRecipient should return right value', async () => {
       expect(await stackingtoken.getBalanceOfRecipient()).to.be.equal(0)
     })
@@ -84,6 +87,31 @@ describe('Stacking token', async () => {
       expect(await stackingtoken.getRecipientAddress()).to.be.equal(accountC.address)
     })
   })
+
+  describe('setTokenAddress', async () => {
+    it('should return if address 0', async () => {
+      await expect(stackingtoken.setTokenAddress(address0)).to.be.revertedWith('Address can not be zero address')
+    })
+    it('should return if not admin', async () => {
+      await expect(stackingtoken.connect(accountB).setTokenAddress(accountC.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
+    })
+    it('should return if not contract', async () => {
+      await expect(stackingtoken.setTokenAddress(accountC.address)).to.be.revertedWith('You must input token address')
+    })
+    it('should set token address correctly', async () => {
+      const Token2 = await ethers.getContractFactory('HdnToken')
+      const token2 = await Token2.deploy()
+      await token2.deployed()
+
+      const tx1 = await stackingtoken.setTokenAddress(token2.address)
+      await tx1.wait()
+
+      expect(await stackingtoken.getTokenAddress()).to.be.equal(token2.address)
+    })
+  })
+
   describe('setCooldownTime', async () => {
     it('should return if new cooldown = 0', async () => {
       await expect(stackingtoken.setCooldownTime(0)).to.be.revertedWith('Please input new cooldown time > 0')

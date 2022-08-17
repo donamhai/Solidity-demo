@@ -63,6 +63,10 @@ interface IMarketplace {
 
   function setFeeRate(uint256 feeDecimal_, uint256 feeRate_) external;
 
+  function setNftAddress(address _nftAddress) external;
+
+  function setTreasureAddress(address _treasureAddress) external;
+
   function getRecipientAddress() external view returns (address);
 
   function getFeeDecimal() external view returns (uint256);
@@ -72,4 +76,8 @@ interface IMarketplace {
   function getOrderOfNFT(uint256 orderId) external view returns (OrderNFT memory);
 
   function getOrderOfTreasure(uint256 orderId) external view returns (OrderTreasure memory);
+
+  function getNftAddress() external view returns (address);
+
+  function getTreasureAddress() external view returns (address);
 }

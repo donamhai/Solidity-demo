@@ -42,6 +42,12 @@ describe('Market Place', async () => {
     it('getFeeRate should return right value', async () => {
       expect(await marketplace.getFeeRate()).to.be.equal(2)
     })
+    it('setNftAddress should return right value', async () => {
+      expect(await marketplace.getNftAddress()).to.be.equal(nft.address)
+    })
+    it('setTreasureAddress should return right value', async () => {
+      expect(await marketplace.getTreasureAddress()).to.be.equal(treasure.address)
+    })
     it('getOrderOfNFT should return right value', async () => {
       expect(await marketplace.getOrderOfNFT(1)).to.be.eql([
         address0,
@@ -88,11 +94,62 @@ describe('Market Place', async () => {
       await expect(marketplace.addPaymentToken(tx1.address)).to.be.revertedWith('NFTMarketplace: already supported')
     })
   })
+
+  describe('setNftAddress', async () => {
+    it('should return if address 0', async () => {
+      await expect(marketplace.setNftAddress(address0)).to.be.revertedWith('Address can not be zero address')
+    })
+    it('should revert if not admin', async () => {
+      await expect(marketplace.connect(accountB).setNftAddress(accountC.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
+    })
+    it('should revert if not contract', async () => {
+      await expect(marketplace.setNftAddress(accountC.address)).to.be.revertedWith(
+        'You must input nft contract address'
+      )
+    })
+    it('should set nft address correctly', async () => {
+      const NFT2 = await ethers.getContractFactory('RelipaNFT')
+      const nft2 = await NFT2.deploy('9999', '2')
+      await nft2.deployed()
+
+      const tx1 = await marketplace.setNftAddress(nft2.address)
+      await tx1.wait()
+
+      expect(await marketplace.getNftAddress()).to.be.equal(nft2.address)
+    })
+  })
+
+  describe('setTreasureAddress', async () => {
+    it('should return if address 0', async () => {
+      await expect(marketplace.setTreasureAddress(address0)).to.be.revertedWith('Address can not be zero address')
+    })
+    it('should revert if not admin', async () => {
+      await expect(marketplace.connect(accountB).setTreasureAddress(accountC.address)).to.be.revertedWith(
+        'Ownable: caller is not the owner'
+      )
+    })
+    it('should revert if not contract', async () => {
+      await expect(marketplace.setTreasureAddress(accountC.address)).to.be.revertedWith(
+        'You must input treasure contract address'
+      )
+    })
+    it('should set treasure address correctly', async () => {
+      const Treasure2 = await ethers.getContractFactory('RelipaTreasure')
+      const treasure2 = await Treasure2.deploy('google.com', nft.address)
+      await treasure2.deployed()
+
+      const tx1 = await marketplace.setTreasureAddress(treasure2.address)
+      await tx1.wait()
+
+      expect(await marketplace.getTreasureAddress()).to.be.equal(treasure2.address)
+    })
+  })
+
   describe('setRecipientAddress', async () => {
     it('should return if address 0', async () => {
-      await expect(marketplace.setRecipientAddress(address0)).to.be.revertedWith(
-        'NFTMarketplace: feeRecipient_ is zero address'
-      )
+      await expect(marketplace.setRecipientAddress(address0)).to.be.revertedWith('Address can not be zero address')
     })
     it('should revert if not admin', async () => {
       await expect(marketplace.connect(accountB).setRecipientAddress(accountC.address)).to.be.revertedWith(
@@ -343,6 +400,12 @@ describe('Market Place', async () => {
         'NFTMarketplace: buyer must be different from seller'
       )
     })
+    it('should revert if buyer is not enough token to buy', async () => {
+      const tx1 = await hdntoken.connect(accountC).transfer(accountD.address, 10000)
+      await tx1.wait()
+
+      await expect(marketplace.connect(accountC).buyOrderNFT(1)).to.be.revertedWith('You dont have enough token to buy')
+    })
     it('should buy order NFT correctly', async () => {
       const tx1 = await marketplace.connect(accountC).buyOrderNFT(1)
       await tx1.wait()
@@ -386,6 +449,14 @@ describe('Market Place', async () => {
     it('should revert if buyer is seller', async () => {
       await expect(marketplace.connect(accountB).buyOrderTreasure(1)).to.be.revertedWith(
         'NFTMarketplace: buyer must be different from seller'
+      )
+    })
+    it('should revert if buyer is not enough token to buy', async () => {
+      const tx1 = await hdntoken.connect(accountC).transfer(accountD.address, 10000)
+      await tx1.wait()
+
+      await expect(marketplace.connect(accountC).buyOrderTreasure(1)).to.be.revertedWith(
+        'You dont have enough token to buy'
       )
     })
     it('should buy order NFT correctly', async () => {

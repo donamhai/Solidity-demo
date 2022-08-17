@@ -23,11 +23,11 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
   RelipaNFT private nftContract;
   uint16 private feeRate;
   address private recipient;
-  mapping(address => uint256) public totalAuctionsOfOwner;
-  mapping(address => mapping(uint256 => uint256)) public indexOfAuctionId;
-  mapping(address => mapping(uint256 => uint256)) public auctionIdOfIndex;
-  mapping(uint256 => Auction) public auctionOfOrderId;
-  mapping(address => mapping(uint256 => uint256)) public fundsByBidder;
+  mapping(address => uint256) private totalAuctionsOfOwner;
+  mapping(address => mapping(uint256 => uint256)) private indexOfAuctionId;
+  mapping(address => mapping(uint256 => uint256)) private auctionIdOfIndex;
+  mapping(uint256 => Auction) private auctionOfOrderId;
+  mapping(address => mapping(uint256 => uint256)) private fundsByBidder;
 
   struct Auction {
     address ownerNFT;
@@ -64,11 +64,19 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     feeRate = _feeRate;
   }
 
-  function getRecipientAddress() external view onlyOwner returns (address) {
+  function getRecipientAddress() external view returns (address) {
     return recipient;
   }
 
-  function getFeeRate() external view onlyOwner returns (uint256) {
+  function getToken() external view returns (address) {
+    return address(token);
+  }
+
+  function getNftAddress() external view returns (address) {
+    return address(nftContract);
+  }
+
+  function getFeeRate() external view returns (uint256) {
     return feeRate;
   }
 
@@ -83,17 +91,25 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     return allAuctionOfOwner;
   }
 
-  function changeRecipientAddress(address _recipient) external CheckAddress(_recipient) onlyOwner {
+  function getBalanceOfRecipient() external view returns (uint256) {
+    return token.balanceOf(recipient);
+  }
+
+  function getTotalAuctionsOfOwner(address ownerAution) external view returns (uint256) {
+    return totalAuctionsOfOwner[ownerAution];
+  }
+
+  function getAutionOfOrderId(uint256 orderId) external view returns (Auction memory) {
+    return auctionOfOrderId[orderId];
+  }
+
+  function setRecipientAddress(address _recipient) external CheckAddress(_recipient) onlyOwner {
     recipient = _recipient;
   }
 
-  function changeFeeRate(uint16 _feeRate) external onlyOwner {
+  function setFeeRate(uint16 _feeRate) external onlyOwner {
     require(0 < _feeRate && _feeRate < 100, 'Fee Rate must among 0 to 100');
     feeRate = _feeRate;
-  }
-
-  function getBalanceOfRecipient() public view onlyOwner returns (uint256) {
-    return token.balanceOf(recipient);
   }
 
   function createAuction(

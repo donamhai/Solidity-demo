@@ -32,6 +32,8 @@ interface IStakingTokenContract {
 
   function setCooldownTime(uint32 _newCooldown) external;
 
+  function setTokenAddress(address _token) external;
+
   function withdrawReward(uint256 _stakeOrder) external;
 
   function withdrawAllRewards() external;
@@ -53,4 +55,6 @@ interface IStakingTokenContract {
   function getStakeOfOrderId(uint256 stakeId) external view returns (Stake memory);
 
   function getStakeOfBalance(address _stakeholder) external view returns (uint256);
+
+  function getTokenAddress() external view returns (address);
 }

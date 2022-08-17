@@ -19,14 +19,14 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   using Counters for Counters.Counter;
 
   EnumerableSet.AddressSet private _supportedPaymentTokens;
-  RelipaNFT private nftContract;
-  RelipaTreasure private treasureContract;
   Counters.Counter private _orderIdNftCount;
   Counters.Counter private _orderIdTreasureCount;
 
   uint256 private feeDecimal;
   uint256 private feeRate;
   address private recipient;
+  address private nftContract;
+  address private treasureContract;
 
   mapping(uint256 => OrderNFT) private orderOfNFT;
   mapping(uint256 => OrderTreasure) private orderOfTreasure;
@@ -45,8 +45,8 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     );
     require(Address.isContract(nftAddress) && Address.isContract(treasureAddress), 'You must input contract address');
 
-    nftContract = RelipaNFT(nftAddress);
-    treasureContract = RelipaTreasure(treasureAddress);
+    nftContract = nftAddress;
+    treasureContract = treasureAddress;
     recipient = recipient_;
     _updateFeeRate(feeDecimal_, feeRate_);
     _supportedPaymentTokens.add(paymentToken_);
@@ -54,6 +54,11 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
 
   modifier checkOrderId(uint256 orderId) {
     require(orderId > 0, 'Order Id must be greater than 0');
+    _;
+  }
+
+  modifier CheckAddress(address _address) {
+    require(_address != address(0), 'Address can not be zero address');
     _;
   }
 
@@ -91,8 +96,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     require(_supportedPaymentTokens.add(paymentToken_), 'NFTMarketplace: already supported');
   }
 
-  function setRecipientAddress(address recipient_) external override onlyOwner {
-    require(recipient_ != address(0), 'NFTMarketplace: feeRecipient_ is zero address');
+  function setRecipientAddress(address recipient_) external override CheckAddress(recipient_) onlyOwner {
     recipient = recipient_;
   }
 
@@ -100,8 +104,26 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     _updateFeeRate(feeDecimal_, feeRate_);
   }
 
+  function setNftAddress(address _nftAddress) external override CheckAddress(_nftAddress) onlyOwner {
+    require(Address.isContract(_nftAddress), 'You must input nft contract address');
+    nftContract = _nftAddress;
+  }
+
+  function setTreasureAddress(address _treasureAddress) external override CheckAddress(_treasureAddress) onlyOwner {
+    require(Address.isContract(_treasureAddress), 'You must input treasure contract address');
+    treasureContract = _treasureAddress;
+  }
+
   function getRecipientAddress() external view override returns (address) {
     return recipient;
+  }
+
+  function getNftAddress() external view override returns (address) {
+    return nftContract;
+  }
+
+  function getTreasureAddress() external view override returns (address) {
+    return treasureContract;
   }
 
   function getFeeDecimal() external view override returns (uint256) {
@@ -126,9 +148,10 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     uint256 price_
   ) external override onlySupportedPaymentToken(paymentToken_) {
     require(nftId_ > 0, 'Invalid tokenId');
-    require(nftContract.ownerOf(nftId_) == _msgSender(), 'NFTMarketplace: sender is not owner of token');
+    require(RelipaNFT(nftContract).ownerOf(nftId_) == _msgSender(), 'NFTMarketplace: sender is not owner of token');
     require(
-      nftContract.getApproved(nftId_) == address(this) || nftContract.isApprovedForAll(_msgSender(), address(this)),
+      RelipaNFT(nftContract).getApproved(nftId_) == address(this) ||
+        RelipaNFT(nftContract).isApprovedForAll(_msgSender(), address(this)),
       'NFTMarketplace: The contract is unauthorized to manage this token'
     );
     require(price_ > 0, 'NFTMarketplace: price must be greater than 0');
@@ -141,7 +164,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     _order.paymentToken = paymentToken_;
     _order.price = price_;
 
-    nftContract.transferNFT(_msgSender(), address(this), nftId_);
+    RelipaNFT(nftContract).transferNFT(_msgSender(), address(this), nftId_);
     emit OrderAdded(_orderId, _msgSender(), nftId_, paymentToken_, price_);
   }
 
@@ -154,7 +177,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     require(treasureType_ == 1, 'Invalid treasureType');
     require(amount_ > 0, 'Amount must be greater than 0');
     require(
-      treasureContract.isApprovedForAll(_msgSender(), address(this)),
+      RelipaTreasure(treasureContract).isApprovedForAll(_msgSender(), address(this)),
       'NFTMarketplace: The contract is unauthorized to manage this token'
     );
     require(price_ > 0, 'NFTMarketplace: price must be greater than 0');
@@ -169,7 +192,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     _order.amount = amount_;
     _order.totalPrice = price_ * amount_;
 
-    treasureContract.safeTransfer(_msgSender(), address(this), treasureType_, amount_);
+    RelipaTreasure(treasureContract).safeTransfer(_msgSender(), address(this), treasureType_, amount_);
     emit OrderAdded(_orderId, _msgSender(), treasureType_, paymentToken_, price_);
   }
 
@@ -178,7 +201,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     require(_order.seller == _msgSender(), 'NFTMarketplace: must be owner');
     uint256 _nftId = _order.nftId;
     delete orderOfNFT[orderId_];
-    nftContract.transferNFT(address(this), _msgSender(), _nftId);
+    RelipaNFT(nftContract).transferNFT(address(this), _msgSender(), _nftId);
     emit OrderCancelled(orderId_);
   }
 
@@ -188,13 +211,14 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
     uint256 _treasureType = _order.treasureType;
     uint256 _amount = _order.amount;
     delete orderOfTreasure[orderId_];
-    treasureContract.safeTransfer(address(this), _msgSender(), _treasureType, _amount);
+    RelipaTreasure(treasureContract).safeTransfer(address(this), _msgSender(), _treasureType, _amount);
     emit OrderCancelled(orderId_);
   }
 
   function buyOrderNFT(uint256 orderId_) external override checkOrderId(orderId_) {
     OrderNFT memory _order = orderOfNFT[orderId_];
     require(orderOfNFT[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
+    require(IERC20(_order.paymentToken).balanceOf(msg.sender) > _order.price, 'You dont have enough token to buy');
     uint256 _feeAmount = _calculateFeeNFT(orderId_);
     if (_feeAmount > 0) {
       IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), recipient, _feeAmount);
@@ -202,7 +226,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
 
     delete orderOfNFT[orderId_];
     IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), _order.seller, _order.price - _feeAmount);
-    nftContract.transferNFT(address(this), _msgSender(), _order.nftId);
+    RelipaNFT(nftContract).transferNFT(address(this), _msgSender(), _order.nftId);
     emit OrderMatched(
       orderId_,
       _order.seller,
@@ -216,6 +240,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
   function buyOrderTreasure(uint256 orderId_) external override checkOrderId(orderId_) {
     OrderTreasure memory _order = orderOfTreasure[orderId_];
     require(orderOfTreasure[orderId_].seller != _msgSender(), 'NFTMarketplace: buyer must be different from seller');
+    require(IERC20(_order.paymentToken).balanceOf(msg.sender) > _order.totalPrice, 'You dont have enough token to buy');
     uint256 _feeAmount = _calculateFeeTreasure(orderId_);
     if (_feeAmount > 0) {
       IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), recipient, _feeAmount);
@@ -223,7 +248,7 @@ contract Marketplace is Ownable, ERC721Holder, ERC1155Holder, IMarketplace {
 
     delete orderOfTreasure[orderId_];
     IERC20(_order.paymentToken).safeTransferFrom(_msgSender(), _order.seller, _order.totalPrice - _feeAmount);
-    treasureContract.safeTransfer(address(this), _msgSender(), _order.treasureType, _order.amount);
+    RelipaTreasure(treasureContract).safeTransfer(address(this), _msgSender(), _order.treasureType, _order.amount);
     emit OrderMatched(orderId_, _order.seller, msg.sender, _order.treasureType, _order.paymentToken, _order.totalPrice);
   }
 }

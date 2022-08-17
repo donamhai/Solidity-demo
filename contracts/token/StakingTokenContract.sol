@@ -10,13 +10,14 @@ import '../interfaces/IStakingTokenContract.sol';
 contract StakingTokenContract is Ownable, IStakingTokenContract {
   using Counters for Counters.Counter;
   Counters.Counter private _stakeOrderIdCount;
-  ERC20 token;
 
   //90 days staking (default 0.25% daily i.e. 22.5% APY in 90 days)
   uint256 private dailyAPY90 = 25;
   uint32 constant periodStaking = 90;
   uint32 private timeCooldown = 10;
   address private recipient;
+  address private token;
+
   mapping(address => uint256) private totalStakesOfAddress;
   mapping(address => mapping(uint256 => uint256)) private indexOfStakeOrderId;
   mapping(address => mapping(uint256 => uint256)) private stakeOrderIdOfIndex;
@@ -39,8 +40,12 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
 
   constructor(address tokenStake, address _recipient) CheckAddress(tokenStake) CheckAddress(_recipient) {
     require(Address.isContract(tokenStake), 'You must input contract address');
-    token = ERC20(tokenStake);
+    token = tokenStake;
     recipient = _recipient;
+  }
+
+  function getTokenAddress() external view override returns (address) {
+    return token;
   }
 
   function getDailyAPY90() external view override returns (uint256) {
@@ -60,7 +65,7 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
   }
 
   function getBalanceOfRecipient() external view override returns (uint256) {
-    return token.balanceOf(recipient);
+    return ERC20(token).balanceOf(recipient);
   }
 
   function getTotalStakesOFAddress(address stakeHolder) external view override returns (uint256) {
@@ -90,13 +95,18 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     recipient = _recipient;
   }
 
+  function setTokenAddress(address _token) external override CheckAddress(_token) onlyOwner {
+    require(Address.isContract(_token), 'You must input token address');
+    token = _token;
+  }
+
   function setCooldownTime(uint32 _newCooldown) external override onlyOwner {
     require(_newCooldown > 0, 'Please input new cooldown time > 0');
     timeCooldown = _newCooldown;
   }
 
   function createStake90Days(uint256 _stakeAmount) external override CheckAmount(_stakeAmount) {
-    require(token.balanceOf(msg.sender) >= _stakeAmount, 'You are not enough token to stake');
+    require(ERC20(token).balanceOf(msg.sender) >= _stakeAmount, 'You are not enough token to stake');
     _stakeOrderIdCount.increment();
     uint256 _stakeOrderId = _stakeOrderIdCount.current();
     totalStakesOfAddress[msg.sender] += 1;
@@ -114,7 +124,7 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     _stake.endDateStaking = uint32(block.timestamp) + periodStaking;
     _stake.readyTime = uint32(block.timestamp) + timeCooldown;
 
-    token.transferFrom(msg.sender, recipient, _stakeAmount);
+    ERC20(token).transferFrom(msg.sender, recipient, _stakeAmount);
     emit CreateStake(msg.sender, _stakeAmount, uint32(block.timestamp), periodStaking, dailyAPY90, _stakeOrderId);
   }
 
@@ -143,11 +153,11 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
   function withdrawReward(uint256 _stakeOrderId) public override CheckStakeOrder(_stakeOrderId) {
     require(block.timestamp >= stakeOfOrderId[_stakeOrderId].readyTime, 'The next withdrawal is not yet');
     uint256 reward = calculateReward(_stakeOrderId);
-    require(token.balanceOf(recipient) >= reward, 'Balance is not enough to pay reward');
+    require(ERC20(token).balanceOf(recipient) >= reward, 'Balance is not enough to pay reward');
     require(reward > 0, 'You dont have any reward to withdraw');
     stakeOfOrderId[_stakeOrderId].startDateReward = uint32(block.timestamp);
     stakeOfOrderId[_stakeOrderId].readyTime = uint32(block.timestamp) + timeCooldown;
-    token.transferFrom(recipient, msg.sender, reward);
+    ERC20(token).transferFrom(recipient, msg.sender, reward);
     emit recieveReward(msg.sender, reward, uint32(block.timestamp), _stakeOrderId);
   }
 
@@ -164,9 +174,9 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
       stakeOfOrderId[stakeOrderIdOfIndex[msg.sender][i]].startDateReward = uint32(block.timestamp);
       stakeOfOrderId[stakeOrderIdOfIndex[msg.sender][i]].readyTime = uint32(block.timestamp) + timeCooldown;
     }
-    require(token.balanceOf(recipient) >= allReward, 'Balance is not enough to pay reward');
+    require(ERC20(token).balanceOf(recipient) >= allReward, 'Balance is not enough to pay reward');
     require(allReward > 0, 'You dont have any reward to withdraw');
-    token.transferFrom(recipient, msg.sender, allReward);
+    ERC20(token).transferFrom(recipient, msg.sender, allReward);
     emit recieveAllReward(msg.sender, allReward, uint32(block.timestamp));
   }
 
@@ -178,7 +188,7 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
 
     uint256 reward = calculateReward(_stakeOrderId);
     uint256 recieveAmount = _stake.stakedAmount + reward;
-    require(token.balanceOf(recipient) >= recieveAmount, 'Balance of recipient is not enough to release stake');
+    require(ERC20(token).balanceOf(recipient) >= recieveAmount, 'Balance of recipient is not enough to release stake');
 
     uint256 removeIndex = indexOfStakeOrderId[msg.sender][_stakeOrderId];
     uint256 lastIndex = totalStakesOfAddress[msg.sender];
@@ -191,7 +201,7 @@ contract StakingTokenContract is Ownable, IStakingTokenContract {
     delete stakeOrderIdOfIndex[msg.sender][lastIndex];
     delete indexOfStakeOrderId[msg.sender][_stakeOrderId];
 
-    token.transferFrom(recipient, msg.sender, recieveAmount);
+    ERC20(token).transferFrom(recipient, msg.sender, recieveAmount);
     emit ReleaseStake(msg.sender, recieveAmount, uint32(block.timestamp), _stakeOrderId);
   }
 }
