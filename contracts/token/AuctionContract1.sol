@@ -30,17 +30,6 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
   mapping(uint256 => Auction) private auctionOfOrderId;
   mapping(address => mapping(uint256 => uint256)) private fundsByBidder;
 
-  struct Auction {
-    address ownerNFT;
-    uint256 nftTokenId;
-    uint256 startPrice;
-    uint32 auction_start;
-    uint32 auction_duration;
-    uint32 auction_end;
-    uint256 highestBid;
-    address highestBidder;
-  }
-
   modifier CheckAddress(address _address) {
     require(_address != address(0), 'Address can not be zero address');
     _;
@@ -65,23 +54,23 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     feeRate = _feeRate;
   }
 
-  function getRecipientAddress() external view returns (address) {
+  function getRecipientAddress() external view override returns (address) {
     return recipient;
   }
 
-  function getToken() external view returns (address) {
-    return address(token);
+  function getTokenAddress() external view override returns (address) {
+    return token;
   }
 
-  function getNftAddress() external view returns (address) {
-    return address(nftContract);
+  function getNftAddress() external view override returns (address) {
+    return nftContract;
   }
 
-  function getFeeRate() external view returns (uint256) {
+  function getFeeRate() external view override returns (uint256) {
     return feeRate;
   }
 
-  function getAuctionOfOwner() external view returns (uint256[] memory) {
+  function getAuctionOfOwner() external view override returns (uint256[] memory) {
     uint256 arrayLength = totalAuctionsOfOwner[msg.sender];
     uint256[] memory allAuctionOfOwner = new uint256[](arrayLength);
 
@@ -92,23 +81,33 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     return allAuctionOfOwner;
   }
 
-  function getBalanceOfRecipient() external view returns (uint256) {
+  function getBalanceOfRecipient() external view override returns (uint256) {
     return ERC20(token).balanceOf(recipient);
   }
 
-  function getTotalAuctionsOfOwner(address ownerAution) external view returns (uint256) {
+  function getTotalAuctionsOfOwner(address ownerAution) external view override returns (uint256) {
     return totalAuctionsOfOwner[ownerAution];
   }
 
-  function getAutionOfOrderId(uint256 orderId) external view returns (Auction memory) {
+  function getAutionOfOrderId(uint256 orderId) external view override returns (Auction memory) {
     return auctionOfOrderId[orderId];
   }
 
-  function setRecipientAddress(address _recipient) external CheckAddress(_recipient) onlyOwner {
+  function setRecipientAddress(address _recipient) external override CheckAddress(_recipient) onlyOwner {
     recipient = _recipient;
   }
 
-  function setFeeRate(uint16 _feeRate) external onlyOwner {
+  function setNftAddress(address _nftAddress) external override CheckAddress(_nftAddress) onlyOwner {
+    require(Address.isContract(_nftAddress), 'You must input nft contract address');
+    nftContract = _nftAddress;
+  }
+
+  function setTokenAddress(address _tokenAddress) external override CheckAddress(_tokenAddress) onlyOwner {
+    require(Address.isContract(_tokenAddress), 'You must input nft contract address');
+    token = _tokenAddress;
+  }
+
+  function setFeeRate(uint16 _feeRate) external override onlyOwner {
     require(0 < _feeRate && _feeRate < 100, 'Fee Rate must among 0 to 100');
     feeRate = _feeRate;
   }
@@ -119,10 +118,10 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     uint32 _duration
   ) external override {
     require(_nftTokenId > 0, 'Invalid tokenId');
-    require(RelipaNFT(nftContract).ownerOf(_nftTokenId) == msg.sender, 'Sender is not owner of token');
+    require(ERC721(nftContract).ownerOf(_nftTokenId) == msg.sender, 'Sender is not owner of token');
     require(
-      RelipaNFT(nftContract).getApproved(_nftTokenId) == address(this) ||
-        RelipaNFT(nftContract).isApprovedForAll(msg.sender, address(this)),
+      ERC721(nftContract).getApproved(_nftTokenId) == address(this) ||
+        ERC721(nftContract).isApprovedForAll(msg.sender, address(this)),
       'The contract is unauthorized to manage this token'
     );
     require(_startPrice >= 1000, 'Price must be greater than 1000');
@@ -144,7 +143,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     _order.auction_duration = _duration;
     _order.auction_end = uint32(block.timestamp + _duration);
 
-    RelipaNFT(nftContract).transferNFT(msg.sender, address(this), _nftTokenId);
+    ERC721(nftContract).transferFrom(msg.sender, address(this), _nftTokenId);
     emit CreateAuctionEvent(msg.sender, _auctionId, _nftTokenId, uint32(block.timestamp), _startPrice, _duration);
   }
 
@@ -215,7 +214,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     removeAuction(_auctionOrderId);
 
     ERC20(token).transferFrom(msg.sender, recipient, feePenalty);
-    RelipaNFT(nftContract).transferNFT(address(this), msg.sender, tokenNFT);
+    ERC721(nftContract).transferFrom(address(this), msg.sender, tokenNFT);
     emit CancelAuctionEvent(msg.sender, _auctionOrderId, feePenalty, uint32(block.timestamp));
   }
 
@@ -238,7 +237,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
 
     removeAuction(_auctionOrderId);
 
-    RelipaNFT(nftContract).transferNFT(address(this), _highestBidder, _nftTokenId);
+    ERC721(nftContract).transferFrom(address(this), _highestBidder, _nftTokenId);
     ERC20(token).transferFrom(recipient, msg.sender, amountPayment);
     emit CloseAuctionEvent(msg.sender, _auctionOrderId, _highestBidder, _highestBid, _auction_end);
   }
