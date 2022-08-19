@@ -4,13 +4,13 @@ pragma solidity ^0.8.1;
 interface IAuctionContract1 {
   struct Auction {
     address ownerNFT;
+    address highestBidder;
+    uint256 highestBid;
     uint256 nftTokenId;
     uint256 startPrice;
     uint32 auction_start;
     uint32 auction_duration;
     uint32 auction_end;
-    uint256 highestBid;
-    address highestBidder;
   }
 
   event CreateAuctionEvent(
