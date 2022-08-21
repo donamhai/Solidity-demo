@@ -7,6 +7,7 @@ describe('Relipa NFT', async () => {
   let hdntoken
   let treasure
   let marketplace
+  let auctionContract1
   let address0 = '0x0000000000000000000000000000000000000000'
   let uri = 'google.com/'
   let provider
@@ -26,15 +27,16 @@ describe('Relipa NFT', async () => {
     treasure = await Treasure.deploy('dantri.com', nft.address)
     await treasure.deployed()
 
-    const setOperator = await nft.addOperator(treasure.address)
-    await setOperator.wait()
+    const AuctionContract1 = await ethers.getContractFactory('AuctionContract1')
+    auctionContract1 = await AuctionContract1.deploy(hdntoken.address, nft.address, accountD.address, 4)
+    await auctionContract1.deployed()
 
     const MarketPlace = await ethers.getContractFactory('Marketplace')
     marketplace = await MarketPlace.deploy(nft.address, treasure.address, hdntoken.address, 2, 2, accountD.address)
     await marketplace.deployed()
 
-    const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
-    await MarketplaceAddress.wait()
+    const setOperator1 = await nft.addOperator1(treasure.address)
+    await setOperator1.wait()
   })
 
   describe('common', async () => {
@@ -57,25 +59,6 @@ describe('Relipa NFT', async () => {
     it('Balance of account B and C should return right value', async () => {
       expect(await nft.balanceOf(accountB.address)).to.be.equal(0)
       expect(await nft.balanceOf(accountC.address)).to.be.equal(0)
-    })
-  })
-
-  describe('setMarketPlaceAddress', async () => {
-    it('should revert if zero address', async () => {
-      await expect(nft.setMarketPlaceAddress(address0)).to.be.revertedWith('Address can not be zero address')
-    })
-    it('should revert if is not contract address', async () => {
-      await expect(nft.setMarketPlaceAddress(accountB.address)).to.be.revertedWith('You must input marketplace address')
-    })
-    it('should revert if not role admin', async () => {
-      await expect(nft.connect(accountB).setMarketPlaceAddress(marketplace.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      )
-    })
-    it('should set marketplace address correctly', async () => {
-      const tx1 = await nft.setMarketPlaceAddress(marketplace.address)
-      await tx1.wait()
-      expect(await nft.getMarketPlaceAddress()).to.be.equal(marketplace.address)
     })
   })
 
@@ -236,16 +219,16 @@ describe('Relipa NFT', async () => {
         'Token id must be greater than 0'
       )
     })
-    it('should revert if not transfer to market place', async () => {
+    it('should revert if caller is not the operator2', async () => {
       const tx1 = await treasure.claimTreasure(1, accountA.address)
       await tx1.wait()
       const tx2 = await treasure.unbox(1)
       await tx2.wait()
       await expect(nft.transferNFT(accountA.address, accountB.address, 1)).to.be.revertedWith(
-        'Cannot transfer to another address, exclude marketplace!'
+        'Caller is not the operator2'
       )
       await expect(nft.transferFrom(accountA.address, accountB.address, 1)).to.be.revertedWith(
-        'Cannot transfer to another address, exclude marketplace!'
+        'Caller is not the operator2'
       )
     })
     it('should revert if balance of from addess = 0', async () => {
@@ -271,6 +254,9 @@ describe('Relipa NFT', async () => {
       expect(await nft.balanceOf(accountC.address)).to.be.equal(3)
       expect(await nft.balanceOf(accountB.address)).to.be.equal(0)
       expect(await nft.ownerOf(3)).to.be.equal(accountC.address)
+
+      const setOperator2 = await nft.addOperator2(marketplace.address)
+      await setOperator2.wait()
 
       const tx3 = await nft.connect(accountC).approve(marketplace.address, 1)
       await tx3.wait()

@@ -24,12 +24,18 @@ describe('Market Place', async () => {
     treasure = await Treasure.deploy('google.com', nft.address)
     await treasure.deployed()
 
-    const setOperator = await nft.addOperator(treasure.address)
-    await setOperator.wait()
-
     const MarketPlace = await ethers.getContractFactory('Marketplace')
     marketplace = await MarketPlace.deploy(nft.address, treasure.address, hdntoken.address, 2, 2, accountD.address)
     await marketplace.deployed()
+
+    const setOperator1 = await nft.addOperator1(treasure.address)
+    await setOperator1.wait()
+
+    const setOperator2 = await treasure.addOperator2(marketplace.address)
+    await setOperator2.wait()
+
+    const setOperator3 = await nft.addOperator2(marketplace.address)
+    await setOperator3.wait()
   })
 
   describe('common', async () => {
@@ -192,9 +198,6 @@ describe('Market Place', async () => {
       const unbox = await treasure.connect(accountB).unbox(2)
       await unbox.wait()
       expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
-
-      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
-      await MarketplaceAddress.wait()
     })
     it('should revert if unsupport token payment', async () => {
       await expect(marketplace.connect(accountB).addOrderNFT(1, nft.address, 1000)).to.be.revertedWith(
@@ -247,9 +250,6 @@ describe('Market Place', async () => {
       const claimTreasure = await treasure.claimTreasure(5, accountB.address)
       await claimTreasure.wait()
       expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
-
-      const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
-      await MarketplaceAddress.wait()
     })
     it('should revert if unsupport token payment', async () => {
       await expect(marketplace.connect(accountB).addOrderTreasure(1, nft.address, 1000, 3)).to.be.revertedWith(
@@ -283,6 +283,7 @@ describe('Market Place', async () => {
       await tx1.wait()
       const tx2 = await marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 3)
       await tx2.wait()
+
       expect(await marketplace.getOrderOfTreasure(1)).to.be.eql([
         accountB.address,
         ethers.BigNumber.from(1),
@@ -301,9 +302,6 @@ describe('Market Place', async () => {
       const unbox = await treasure.connect(accountB).unbox(2)
       await unbox.wait()
       expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
-
-      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
-      await MarketplaceAddress.wait()
 
       const tx1 = await nft.connect(accountB).approve(marketplace.address, 1)
       await tx1.wait()
@@ -337,9 +335,6 @@ describe('Market Place', async () => {
       await claimTreasure.wait()
 
       expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
-
-      const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
-      await MarketplaceAddress.wait()
 
       const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
       await tx1.wait()
@@ -377,9 +372,6 @@ describe('Market Place', async () => {
       const unbox = await treasure.connect(accountB).unbox(2)
       await unbox.wait()
       expect(await nft.balanceOf(accountB.address)).to.be.equal(2)
-
-      const MarketplaceAddress = await nft.setMarketPlaceAddress(marketplace.address)
-      await MarketplaceAddress.wait()
 
       const tx1 = await nft.connect(accountB).approve(marketplace.address, 1)
       await tx1.wait()
@@ -426,9 +418,6 @@ describe('Market Place', async () => {
       const claimTreasure = await treasure.claimTreasure(5, accountB.address)
       await claimTreasure.wait()
       expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
-
-      const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
-      await MarketplaceAddress.wait()
 
       const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
       await tx1.wait()

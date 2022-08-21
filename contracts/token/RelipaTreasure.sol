@@ -7,7 +7,6 @@ import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
 import './RelipaNFT.sol';
 import '../interfaces/IRelipaTreasure.sol';
 import './AccessController.sol';
-import './Marketplace.sol';
 
 contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, AccessController {
   uint256 private constant RELIPA_TREASURE = 1;
@@ -44,20 +43,6 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
 
   function getNftAddress() external view override returns (address) {
     return NFTaddress;
-  }
-
-  function getMarketPlaceAddress() external view override returns (address) {
-    return marketplaceAddress;
-  }
-
-  function setMarketPlaceAddress(address _marketPlaceAddress)
-    external
-    override
-    CheckAddress(_marketPlaceAddress)
-    onlyOwner
-  {
-    require(Address.isContract(_marketPlaceAddress), 'You must input marketplace address');
-    marketplaceAddress = _marketPlaceAddress;
   }
 
   function setURI(string memory newUri) external override onlyOwner {
@@ -97,10 +82,7 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
     uint256 id,
     uint256 amount,
     bytes memory data
-  ) internal virtual override {
-    if (from != marketplaceAddress) {
-      require(to == marketplaceAddress, 'Cannot transfer to another address, exclude marketplace!');
-    }
+  ) internal virtual override onlyOperator2 {
     super._safeTransferFrom(from, to, id, amount, data);
   }
 
@@ -110,10 +92,7 @@ contract RelipaTreasure is ERC1155, ERC1155Holder, Ownable, IRelipaTreasure, Acc
     uint256[] memory ids,
     uint256[] memory amounts,
     bytes memory data
-  ) internal virtual override {
-    if (from != marketplaceAddress) {
-      require(to == marketplaceAddress, 'Cannot transfer to another address, exclude marketplace!');
-    }
+  ) internal virtual override onlyOperator2 {
     super._safeBatchTransferFrom(from, to, ids, amounts, data);
   }
 

@@ -7,7 +7,6 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '../interfaces/IRelipaNFT.sol';
 import './AccessController.sol';
-import './Marketplace.sol';
 
 contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, AccessController {
   using Counters for Counters.Counter;
@@ -17,7 +16,6 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
   mapping(uint256 => Metadata) private _metadataOfTokenId;
   uint32 private _timeExpireDate;
   uint16 private _discount;
-  address private marketplaceAddress;
 
   modifier checkTokenId(uint256 tokenId) {
     require(tokenId > 0, 'Token id must be greater than 0');
@@ -67,20 +65,6 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     return allToken;
   }
 
-  function getMarketPlaceAddress() external view override returns (address) {
-    return marketplaceAddress;
-  }
-
-  function setMarketPlaceAddress(address _marketPlaceAddress)
-    external
-    override
-    CheckAddress(_marketPlaceAddress)
-    onlyOwner
-  {
-    require(Address.isContract(_marketPlaceAddress), 'You must input marketplace address');
-    marketplaceAddress = _marketPlaceAddress;
-  }
-
   function setBaseTokenURI(string memory baseTokenURI) external override onlyOwner {
     require(bytes(baseTokenURI).length > 0, 'Please input base token URI');
     _baseTokenURI = baseTokenURI;
@@ -96,7 +80,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     _discount = _newDiscount;
   }
 
-  function _mint(address to, uint256 tokenId) internal virtual override onlyOperator {
+  function _mint(address to, uint256 tokenId) internal virtual override onlyOperator1 {
     super._mint(to, tokenId);
   }
 
@@ -138,10 +122,7 @@ contract RelipaNFT is ERC721Holder, ERC721Enumerable, Ownable, IRelipaNFT, Acces
     address from,
     address to,
     uint256 tokenId
-  ) internal virtual override {
-    if (from == ownerOf(tokenId) && from != marketplaceAddress) {
-      require(to == marketplaceAddress, 'Cannot transfer to another address, exclude marketplace!');
-    }
+  ) internal virtual override onlyOperator2 {
     super._transfer(from, to, tokenId);
   }
 

@@ -26,15 +26,12 @@ describe('Relipa Treasure', async () => {
     treasure = await Treasure.deploy(uri, nft.address)
     await treasure.deployed()
 
-    const setOperator = await nft.addOperator(treasure.address)
-    await setOperator.wait()
-
     const MarketPlace = await ethers.getContractFactory('Marketplace')
     marketplace = await MarketPlace.deploy(nft.address, treasure.address, hdntoken.address, 2, 2, accountD.address)
     await marketplace.deployed()
 
-    const MarketplaceAddress = await treasure.setMarketPlaceAddress(marketplace.address)
-    await MarketplaceAddress.wait()
+    const setOperator1 = await nft.addOperator1(treasure.address)
+    await setOperator1.wait()
   })
   describe('common', async () => {
     it('getTreasureType should return right value', async () => {
@@ -64,26 +61,7 @@ describe('Relipa Treasure', async () => {
       expect(await treasure.getURI()).to.be.equal('dantri.com')
     })
   })
-  describe('setMarketPlaceAddress', async () => {
-    it('should revert if address 0', async () => {
-      await expect(treasure.setMarketPlaceAddress(address0)).to.be.revertedWith('Address can not be zero address')
-    })
-    it('should revert if not admin role', async () => {
-      await expect(treasure.connect(accountB).setMarketPlaceAddress(marketplace.address)).to.be.revertedWith(
-        'Ownable: caller is not the owner'
-      )
-    })
-    it('should revert if not contract address', async () => {
-      await expect(treasure.setMarketPlaceAddress(accountB.address)).to.be.revertedWith(
-        'You must input marketplace address'
-      )
-    })
-    it('should set market place address correctly', async () => {
-      const tx1 = await treasure.setMarketPlaceAddress(marketplace.address)
-      await tx1.wait()
-      expect(await treasure.getMarketPlaceAddress()).to.be.equal(marketplace.address)
-    })
-  })
+
   describe('setNftAddress', async () => {
     it('should revert if address 0', async () => {
       await expect(treasure.setNftAddress(address0)).to.be.revertedWith('Address can not be zero address')
@@ -174,21 +152,21 @@ describe('Relipa Treasure', async () => {
         'Amount must be less or equal than sender treasure amount'
       )
     })
-    it('should revert if not transfer to market place', async () => {
+    it('should revert if not the operator2', async () => {
       await expect(
         treasure.connect(accountB).safeTransfer(accountB.address, accountC.address, 1, 1)
-      ).to.be.revertedWith('Cannot transfer to another address, exclude marketplace!')
+      ).to.be.revertedWith('Caller is not the operator2')
       await expect(
         treasure
           .connect(accountB)
           .safeTransferFrom(accountB.address, accountC.address, 1, 1, ethers.utils.formatBytes32String(''))
-      ).to.be.revertedWith('Cannot transfer to another address, exclude marketplace!')
+      ).to.be.revertedWith('Caller is not the operator2')
 
       await expect(
         treasure
           .connect(accountB)
           .safeBatchTransferFrom(accountB.address, accountC.address, [1], [1], ethers.utils.formatBytes32String(''))
-      ).to.be.revertedWith('Cannot transfer to another address, exclude marketplace!')
+      ).to.be.revertedWith('Caller is not the operator2')
     })
     it('should revert if balance of from addess = 0', async () => {
       expect(await treasure.getBalanceOf(accountC.address)).to.be.equal(0)
@@ -201,6 +179,9 @@ describe('Relipa Treasure', async () => {
     it('should transfer treasure correctly', async () => {
       expect(await treasure.getBalanceOf(accountC.address)).to.be.equal(0)
       expect(await treasure.getBalanceOf(accountB.address)).to.be.equal(5)
+      const setOperator2 = await treasure.addOperator2(marketplace.address)
+      await setOperator2.wait()
+
       const tx1 = await treasure.connect(accountB).setApprovalForAll(marketplace.address, true)
       await tx1.wait()
       const tx2 = await marketplace.connect(accountB).addOrderTreasure(1, hdntoken.address, 1000, 2)

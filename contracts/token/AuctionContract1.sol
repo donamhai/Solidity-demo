@@ -103,7 +103,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
   }
 
   function setTokenAddress(address _tokenAddress) external override CheckAddress(_tokenAddress) onlyOwner {
-    require(Address.isContract(_tokenAddress), 'You must input nft contract address');
+    require(Address.isContract(_tokenAddress), 'You must input token address');
     token = _tokenAddress;
   }
 
@@ -118,10 +118,10 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     uint32 _duration
   ) external override {
     require(_nftTokenId > 0, 'Invalid tokenId');
-    require(ERC721(nftContract).ownerOf(_nftTokenId) == msg.sender, 'Sender is not owner of token');
+    require(RelipaNFT(nftContract).ownerOf(_nftTokenId) == msg.sender, 'Sender is not owner of token');
     require(
-      ERC721(nftContract).getApproved(_nftTokenId) == address(this) ||
-        ERC721(nftContract).isApprovedForAll(msg.sender, address(this)),
+      RelipaNFT(nftContract).getApproved(_nftTokenId) == address(this) ||
+        RelipaNFT(nftContract).isApprovedForAll(msg.sender, address(this)),
       'The contract is unauthorized to manage this token'
     );
     require(_startPrice >= 1000, 'Price must be greater than 1000');
@@ -143,7 +143,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     _order.auction_duration = _duration;
     _order.auction_end = uint32(block.timestamp + _duration);
 
-    ERC721(nftContract).transferFrom(msg.sender, address(this), _nftTokenId);
+    RelipaNFT(nftContract).transferNFT(msg.sender, address(this), _nftTokenId);
     emit CreateAuctionEvent(msg.sender, _auctionId, _nftTokenId, uint32(block.timestamp), _startPrice, _duration);
   }
 
@@ -214,7 +214,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
     removeAuction(_auctionOrderId);
 
     ERC20(token).transferFrom(msg.sender, recipient, feePenalty);
-    ERC721(nftContract).transferFrom(address(this), msg.sender, tokenNFT);
+    RelipaNFT(nftContract).transferNFT(address(this), msg.sender, tokenNFT);
     emit CancelAuctionEvent(msg.sender, _auctionOrderId, feePenalty, uint32(block.timestamp));
   }
 
@@ -237,7 +237,7 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
 
     removeAuction(_auctionOrderId);
 
-    ERC721(nftContract).transferFrom(address(this), _highestBidder, _nftTokenId);
+    RelipaNFT(nftContract).transferNFT(address(this), _highestBidder, _nftTokenId);
     ERC20(token).transferFrom(recipient, msg.sender, amountPayment);
     emit CloseAuctionEvent(msg.sender, _auctionOrderId, _highestBidder, _highestBid, _auction_end);
   }
