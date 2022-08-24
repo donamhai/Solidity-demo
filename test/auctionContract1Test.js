@@ -255,29 +255,28 @@ describe('Auction Contract 1', async () => {
       const setOperator3 = await nft.addOperator2(auctionContract1.address)
       await setOperator3.wait()
       const tx3 = await nft.connect(accountB).approve(auctionContract1.address, 1)
-      await tx3.wait()
       const tx4 = await auctionContract1.connect(accountB).createAuction(1, 1000, 20)
       const txReceipt4 = await tx4.wait()
       timestamp = (await ethers.provider.getBlock(txReceipt4.blockNumber)).timestamp
     })
     it('should return if auction order id = 0', async () => {
-      expect(await auctionContract1.connect(accountC).bidAuction(0, 1001)).to.be.revertedWith(
+      await expect(auctionContract1.connect(accountC).bidAuction(0, 1001)).to.be.revertedWith(
         'Invalid auction order id'
       )
     })
     it('should return if bid time > = end time', async () => {
       await network.provider.send('evm_increaseTime', [30])
-      expect(await auctionContract1.connect(accountC).bidAuction(1, 1001)).to.be.revertedWith(
+      await expect(auctionContract1.connect(accountC).bidAuction(1, 1001)).to.be.revertedWith(
         'The auction has already ended'
       )
     })
     it('should revert if bidder is the owner of auction', async () => {
-      expect(await auctionContract1.connect(accountB).bidAuction(1, 1001)).to.be.revertedWith(
+      await expect(auctionContract1.connect(accountB).bidAuction(1, 1001)).to.be.revertedWith(
         'Bidder must be different from owner auction'
       )
     })
     it('should revert if have bidden this auction', async () => {
-      const tx1 = await hdntoken.claim(accountC.address, 10000)
+      const tx1 = await hdntoken.claim(10000, accountC.address)
       await tx1.wait()
       const tx2 = await hdntoken.connect(accountC).approve(auctionContract1.address, 10000)
       await tx2.wait()
@@ -288,40 +287,44 @@ describe('Auction Contract 1', async () => {
       )
     })
     it('should revert if balance of bidder is not enough', async () => {
-      const tx1 = await hdntoken.claim(accountC.address, 10000)
+      const tx1 = await hdntoken.claim(10000, accountC.address)
       await tx1.wait()
       const tx2 = await hdntoken.connect(accountC).approve(auctionContract1.address, 10000)
       await tx2.wait()
       const tx3 = await auctionContract1.connect(accountC).bidAuction(1, 10000)
       await tx3.wait()
-      const tx4 = await hdntoken.claim(accountA.address, 9000)
+      const tx4 = await hdntoken.claim(9000, accountA.address)
       await tx4.wait()
-      const tx5 = await hdntoken.approve(auctionContract1.address, 9000)
+      const tx5 = await hdntoken.approve(auctionContract1.address, 100000)
       await tx5.wait()
       await expect(auctionContract1.bidAuction(1, 11000)).to.be.revertedWith(
         'Balance of bidder is not enough to bid this auction'
       )
     })
     it('should revert if bid smaller than start price', async () => {
-      await expect(auctionContract1.connect(accountC).bidAuction(1, 1001)).to.be.revertedWith(
+      const tx1 = await hdntoken.claim(10000, accountC.address)
+      await tx1.wait()
+      const tx2 = await hdntoken.connect(accountC).approve(auctionContract1.address, 10000)
+      await tx2.wait()
+      await expect(auctionContract1.connect(accountC).bidAuction(1, 999)).to.be.revertedWith(
         'You must bid greater than start price'
       )
     })
     it('should revert if bid smaller than highest bid', async () => {
-      const tx1 = await hdntoken.claim(accountC.address, 10000)
+      const tx1 = await hdntoken.claim(10000, accountC.address)
       await tx1.wait()
       const tx2 = await hdntoken.connect(accountC).approve(auctionContract1.address, 10000)
       await tx2.wait()
       const tx3 = await auctionContract1.connect(accountC).bidAuction(1, 10000)
       await tx3.wait()
-      const tx4 = await hdntoken.claim(accountA.address, 9000)
+      const tx4 = await hdntoken.claim(9000, accountA.address)
       await tx4.wait()
       const tx5 = await hdntoken.approve(auctionContract1.address, 9000)
       await tx5.wait()
       await expect(auctionContract1.bidAuction(1, 9000)).to.be.revertedWith('There is already a higher or equal bid')
     })
     it('should bid auction correctly', async () => {
-      const tx1 = await hdntoken.claim(accountC.address, 10000)
+      const tx1 = await hdntoken.claim(10000, accountC.address)
       await tx1.wait()
       const tx2 = await hdntoken.connect(accountC).approve(auctionContract1.address, 10000)
       await tx2.wait()
@@ -340,7 +343,7 @@ describe('Auction Contract 1', async () => {
         timestamp + 30,
       ])
 
-      const tx4 = await hdntoken.claim(accountA.address, 9000)
+      const tx4 = await hdntoken.claim(9000, accountA.address)
       await tx4.wait()
       const tx5 = await hdntoken.approve(auctionContract1.address, 9000)
       await tx5.wait()
