@@ -500,10 +500,49 @@ describe('Auction Contract 1', async () => {
     })
   })
   describe('closeAuction', async () => {
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
+    beforeEach(async () => {
+      const tx1 = await treasure.claimTreasure(2, accountB.address)
+      await tx1.wait()
+      const tx2 = await treasure.connect(accountB).unbox(2)
+      await tx2.wait()
+      const setOperator3 = await nft.addOperator2(auctionContract1.address)
+      await setOperator3.wait()
+      const tx3 = await nft.connect(accountB).approve(auctionContract1.address, 1)
+      await tx3.wait()
+      const tx4 = await auctionContract1.connect(accountB).createAuction(1, 3000, 20)
+      await tx4.wait()
+      const tx5 = await hdntoken.claim(9000, accountC.address)
+      await tx5.wait()
+      const tx6 = await hdntoken.connect(accountC).approve(auctionContract1.address, 9000)
+      await tx6.wait()
+      const tx7 = await auctionContract1.connect(accountC).bidAuction(1, 5000)
+      await tx7.wait()
+      const tx8 = await hdntoken.connect(accountD).approve(auctionContract1.address, 100000)
+      await tx8.wait()
+      expect(await hdntoken.balanceOf(accountC.address)).to.be.equal(4000)
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(5000)
+    })
+    it('should revert if auction order id = 0', async () => {
+      await expect(auctionContract1.connect(accountB).closeAuction(0)).to.be.revertedWith('Invalid auction order id')
+    })
+    it('should revert if the auction has already ended', async () => {
+      await network.provider.send('evm_increaseTime', [10])
+      await expect(auctionContract1.connect(accountB).closeAuction(1)).to.be.revertedWith(
+        'The auction has not ended yet'
+      )
+    })
+    it('should revert if not owner of this auction', async () => {
+      await expect(auctionContract1.connect(accountC).closeAuction(1)).to.be.revertedWith(
+        'You are not owner of this auction'
+      )
+    })
+    it('should revert if balance of Aution Market not enough to withdraw', async () => {
+      const tx4 = await hdntoken.connect(accountD).transfer(accountA.address, 10000)
+      await tx4.wait()
+      await expect(auctionContract1.connect(accountB).closeAuction(1)).to.be.revertedWith(
+        'Balance of Auction Market not enough to withdraw'
+      )
+    })
+    it('should close auction correctly', async () => {})
   })
 })
