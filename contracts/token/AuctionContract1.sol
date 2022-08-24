@@ -172,8 +172,8 @@ contract AuctionContract1 is Ownable, ERC721Holder, IAuctionContract1 {
 
   function withdraw(uint256 _auctionOrderId) external override CheckAuctionOrder(_auctionOrderId) {
     Auction memory _order = auctionOfOrderId[_auctionOrderId];
-    require(fundsByBidder[msg.sender][_auctionOrderId] > 0, "You don't bid this auction");
-    require(_order.highestBidder != msg.sender, "Your bid is the highest price, can't withdraw");
+    require(fundsByBidder[msg.sender][_auctionOrderId] > 0, 'You do not bid this auction');
+    require(_order.highestBidder != msg.sender, 'Your bid is the highest price, can not withdraw');
     require(
       ERC20(token).balanceOf(recipient) >= fundsByBidder[msg.sender][_auctionOrderId],
       'Balance of Auction Market not enough to withdraw'

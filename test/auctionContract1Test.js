@@ -2,7 +2,7 @@ const { expect } = require('chai')
 const { ethers } = require('hardhat')
 
 describe('Auction Contract 1', async () => {
-  let [accountA, accountB, accountC, accountD] = []
+  let [accountA, accountB, accountC, accountD, accountE] = []
   let nft
   let hdntoken
   let treasure
@@ -14,7 +14,7 @@ describe('Auction Contract 1', async () => {
 
   beforeEach(async () => {
     provider = new ethers.providers.JsonRpcProvider()
-    ;[accountA, accountB, accountC, accountD] = await ethers.getSigners()
+    ;[accountA, accountB, accountC, accountD, accountE] = await ethers.getSigners()
     const NFT = await ethers.getContractFactory('RelipaNFT')
     nft = await NFT.deploy('9999', '2')
     await nft.deployed()
@@ -255,6 +255,7 @@ describe('Auction Contract 1', async () => {
       const setOperator3 = await nft.addOperator2(auctionContract1.address)
       await setOperator3.wait()
       const tx3 = await nft.connect(accountB).approve(auctionContract1.address, 1)
+      await tx3.wait()
       const tx4 = await auctionContract1.connect(accountB).createAuction(1, 1000, 20)
       const txReceipt4 = await tx4.wait()
       timestamp = (await ethers.provider.getBlock(txReceipt4.blockNumber)).timestamp
@@ -293,11 +294,11 @@ describe('Auction Contract 1', async () => {
       await tx2.wait()
       const tx3 = await auctionContract1.connect(accountC).bidAuction(1, 10000)
       await tx3.wait()
-      const tx4 = await hdntoken.claim(9000, accountA.address)
+      const tx4 = await hdntoken.claim(9000, accountE.address)
       await tx4.wait()
-      const tx5 = await hdntoken.approve(auctionContract1.address, 100000)
+      const tx5 = await hdntoken.connect(accountE).approve(auctionContract1.address, 100000)
       await tx5.wait()
-      await expect(auctionContract1.bidAuction(1, 11000)).to.be.revertedWith(
+      await expect(auctionContract1.connect(accountE).bidAuction(1, 11000)).to.be.revertedWith(
         'Balance of bidder is not enough to bid this auction'
       )
     })
@@ -339,8 +340,8 @@ describe('Auction Contract 1', async () => {
         ethers.BigNumber.from(1),
         ethers.BigNumber.from(1000),
         timestamp,
-        30,
-        timestamp + 30,
+        20,
+        timestamp + 20,
       ])
 
       const tx4 = await hdntoken.claim(9000, accountA.address)
@@ -358,31 +359,145 @@ describe('Auction Contract 1', async () => {
         ethers.BigNumber.from(1),
         ethers.BigNumber.from(1000),
         timestamp,
-        30,
-        timestamp + 30,
+        20,
+        timestamp + 20,
       ])
     })
   })
   describe('withdraw', async () => {
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-  })
-  describe('removeAuction', async () => {
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
+    beforeEach(async () => {
+      const tx1 = await treasure.claimTreasure(2, accountB.address)
+      await tx1.wait()
+      const tx2 = await treasure.connect(accountB).unbox(2)
+      await tx2.wait()
+      const setOperator3 = await nft.addOperator2(auctionContract1.address)
+      await setOperator3.wait()
+      const tx3 = await nft.connect(accountB).approve(auctionContract1.address, 1)
+      await tx3.wait()
+      const tx4 = await auctionContract1.connect(accountB).createAuction(1, 1000, 20)
+      await tx4.wait()
+      const tx5 = await hdntoken.claim(9000, accountC.address)
+      await tx5.wait()
+      const tx6 = await hdntoken.connect(accountC).approve(auctionContract1.address, 9000)
+      await tx6.wait()
+      const tx7 = await auctionContract1.connect(accountC).bidAuction(1, 5000)
+      await tx7.wait()
+      const tx8 = await hdntoken.connect(accountD).approve(auctionContract1.address, 100000)
+      await tx8.wait()
+      expect(await hdntoken.balanceOf(accountC.address)).to.be.equal(4000)
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(5000)
+    })
+    it('should revert if auction order id = 0', async () => {
+      await expect(auctionContract1.connect(accountC).withdraw(0)).to.be.revertedWith('Invalid auction order id')
+    })
+    it('should revert if you do not bid this aution', async () => {
+      await expect(auctionContract1.connect(accountE).withdraw(1)).to.be.revertedWith('You do not bid this auction')
+    })
+    it('should revert if your bid is the highest price', async () => {
+      await expect(auctionContract1.connect(accountC).withdraw(1)).to.be.revertedWith(
+        'Your bid is the highest price, can not withdraw'
+      )
+    })
+    it('should revert if balance of Aution Market not enough to withdraw', async () => {
+      const tx1 = await hdntoken.claim(9000, accountE.address)
+      await tx1.wait()
+      const tx2 = await hdntoken.connect(accountE).approve(auctionContract1.address, 9000)
+      await tx2.wait()
+      const tx3 = await auctionContract1.connect(accountE).bidAuction(1, 6000)
+      await tx3.wait()
+      const tx4 = await hdntoken.connect(accountD).transfer(accountA.address, 10000)
+      await tx4.wait()
+      await expect(auctionContract1.connect(accountC).withdraw(1)).to.be.revertedWith(
+        'Balance of Auction Market not enough to withdraw'
+      )
+    })
+    it('should withdraw correctly', async () => {
+      const tx1 = await hdntoken.claim(9000, accountE.address)
+      await tx1.wait()
+      const tx2 = await hdntoken.connect(accountE).approve(auctionContract1.address, 9000)
+      await tx2.wait()
+      const tx3 = await auctionContract1.connect(accountE).bidAuction(1, 6000)
+      await tx3.wait()
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(11000)
+      const tx4 = await auctionContract1.connect(accountC).withdraw(1)
+      await tx4.wait()
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(6000)
+      expect(await hdntoken.balanceOf(accountC.address)).to.be.equal(9000)
+      await expect(auctionContract1.connect(accountE).withdraw(1)).to.be.revertedWith(
+        'Your bid is the highest price, can not withdraw'
+      )
+    })
   })
   describe('cancelAuction', async () => {
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
-    it('', async () => {})
+    beforeEach(async () => {
+      const tx1 = await treasure.claimTreasure(2, accountB.address)
+      await tx1.wait()
+      const tx2 = await treasure.connect(accountB).unbox(2)
+      await tx2.wait()
+      const setOperator3 = await nft.addOperator2(auctionContract1.address)
+      await setOperator3.wait()
+      const tx3 = await nft.connect(accountB).approve(auctionContract1.address, 1)
+      await tx3.wait()
+      const tx4 = await auctionContract1.connect(accountB).createAuction(1, 3000, 20)
+      await tx4.wait()
+      const tx5 = await hdntoken.claim(9000, accountC.address)
+      await tx5.wait()
+      const tx6 = await hdntoken.connect(accountC).approve(auctionContract1.address, 9000)
+      await tx6.wait()
+      const tx7 = await auctionContract1.connect(accountC).bidAuction(1, 5000)
+      await tx7.wait()
+      const tx8 = await hdntoken.connect(accountD).approve(auctionContract1.address, 100000)
+      await tx8.wait()
+      expect(await hdntoken.balanceOf(accountC.address)).to.be.equal(4000)
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(5000)
+    })
+    it('should revert if auction order id = 0', async () => {
+      await expect(auctionContract1.connect(accountB).cancelAuction(0)).to.be.revertedWith('Invalid auction order id')
+    })
+    it('should revert if the auction has already ended', async () => {
+      await network.provider.send('evm_increaseTime', [30])
+      await expect(auctionContract1.connect(accountB).cancelAuction(1)).to.be.revertedWith(
+        'The auction has already ended'
+      )
+    })
+    it('should revert if not owner of this auction', async () => {
+      await expect(auctionContract1.connect(accountC).cancelAuction(1)).to.be.revertedWith(
+        'You are not owner of this auction'
+      )
+    })
+    it('should revert if balance of account B is less than starting price', async () => {
+      const tx1 = await hdntoken.claim(2000, accountB.address)
+      await tx1.wait()
+      const tx2 = await hdntoken.connect(accountB).approve(auctionContract1.address, 9000)
+      await tx2.wait()
+      await expect(auctionContract1.connect(accountB).cancelAuction(1)).to.be.revertedWith(
+        'If you cancel the auction, the starting price of auction will be lost'
+      )
+    })
+    it('should cancel auction correctly', async () => {
+      const tx1 = await hdntoken.claim(9000, accountB.address)
+      await tx1.wait()
+      const tx2 = await hdntoken.connect(accountB).approve(auctionContract1.address, 9000)
+      await tx2.wait()
+      const tx3 = await auctionContract1.connect(accountB).cancelAuction(1)
+      await tx3.wait()
+      expect(await auctionContract1.connect(accountB).getTotalAuctionsOfOwner(accountB.address)).to.be.equal(0)
+      expect(await auctionContract1.getAutionOfOrderId(1)).to.be.eql([
+        address0,
+        address0,
+        ethers.BigNumber.from(0),
+        ethers.BigNumber.from(0),
+        ethers.BigNumber.from(0),
+        0,
+        0,
+        0,
+      ])
+      expect(await hdntoken.balanceOf(accountB.address)).to.be.equal(6000)
+      const tx4 = await auctionContract1.connect(accountC).withdraw(1)
+      await tx4.wait()
+      expect(await hdntoken.balanceOf(accountC.address)).to.be.equal(9000)
+      expect(await hdntoken.balanceOf(accountD.address)).to.be.equal(3000)
+    })
   })
   describe('closeAuction', async () => {
     it('', async () => {})
