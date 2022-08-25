@@ -206,7 +206,7 @@ describe('Market Place', async () => {
     })
     it('should revert if invalid token', async () => {
       await expect(marketplace.connect(accountB).addOrderNFT(3, hdntoken.address, 1000)).to.be.revertedWith(
-        'ERC721: invalid token ID'
+        'ERC721: owner query for nonexistent token'
       )
     })
     it('should revert if not owner token', async () => {
