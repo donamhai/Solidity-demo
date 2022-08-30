@@ -276,30 +276,15 @@ describe('Auction Contract 2', async () => {
         'Bidder must be different from owner auction'
       )
     })
-    it('should revert if have bidden this auction', async () => {
-      const tx1 = await hdntoken.claim(10000, accountC.address)
-      await tx1.wait()
-      const tx2 = await hdntoken.connect(accountC).approve(auctionContract2.address, 10000)
-      await tx2.wait()
-      const tx3 = await auctionContract2.connect(accountC).bidAuction(1, 1001)
-      await tx3.wait()
-      await expect(auctionContract2.connect(accountC).bidAuction(1, 1005)).to.be.revertedWith(
-        'You have bidden this auction, please withdraw your money before bidding again'
-      )
-    })
     it('should revert if balance of bidder is not enough', async () => {
       const tx1 = await hdntoken.claim(10000, accountC.address)
       await tx1.wait()
-      const tx2 = await hdntoken.connect(accountC).approve(auctionContract2.address, 10000)
+      const tx2 = await hdntoken.connect(accountC).approve(auctionContract2.address, 100000)
       await tx2.wait()
-      const tx3 = await auctionContract2.connect(accountC).bidAuction(1, 10000)
+      const tx3 = await auctionContract2.connect(accountC).bidAuction(1, 9000)
       await tx3.wait()
-      const tx4 = await hdntoken.claim(9000, accountE.address)
-      await tx4.wait()
-      const tx5 = await hdntoken.connect(accountE).approve(auctionContract2.address, 100000)
-      await tx5.wait()
-      await expect(auctionContract2.connect(accountE).bidAuction(1, 11000)).to.be.revertedWith(
-        'Balance of bidder is not enough to bid this auction'
+      await expect(auctionContract2.connect(accountC).bidAuction(1, 2000)).to.be.revertedWith(
+        'Balance of bidder is not enough to increase bid this auction'
       )
     })
     it('should revert if bid smaller than start price', async () => {
@@ -356,6 +341,21 @@ describe('Auction Contract 2', async () => {
         accountB.address,
         accountA.address,
         ethers.BigNumber.from(5000),
+        ethers.BigNumber.from(1),
+        ethers.BigNumber.from(1000),
+        timestamp,
+        20,
+        timestamp + 20,
+      ])
+
+      const tx7 = await auctionContract2.connect(accountC).bidAuction(1, 4000)
+      await tx7.wait()
+
+      expect(await auctionContract2.getBalanceOfRecipient()).to.be.equal(11000)
+      expect(await auctionContract2.getAutionOfOrderId(1)).to.be.eql([
+        accountB.address,
+        accountC.address,
+        ethers.BigNumber.from(6000),
         ethers.BigNumber.from(1),
         ethers.BigNumber.from(1000),
         timestamp,

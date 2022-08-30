@@ -152,11 +152,12 @@ contract AuctionContract2 is Ownable, ERC721Holder, IAuctionContract2 {
   {
     Auction storage _order = auctionOfOrderId[_auctionOrderId];
     require(block.timestamp < _order.auction_end, 'The auction has already ended');
+    require(_order.ownerNFT != msg.sender, 'Bidder must be different from owner auction');
     require(
       ERC20(token).balanceOf(msg.sender) >= _bidIncrease,
       'Balance of bidder is not enough to increase bid this auction'
     );
-    require(_order.ownerNFT != msg.sender, 'Bidder must be different from owner auction');
+
     require(
       fundsByBidder[msg.sender][_auctionOrderId] + _bidIncrease > _order.startPrice,
       'You must bid greater than start price'
@@ -176,8 +177,8 @@ contract AuctionContract2 is Ownable, ERC721Holder, IAuctionContract2 {
 
   function withdraw(uint256 _auctionOrderId) external override CheckAuctionOrder(_auctionOrderId) {
     Auction memory _order = auctionOfOrderId[_auctionOrderId];
-    require(fundsByBidder[msg.sender][_auctionOrderId] > 0, "You don't bid this auction");
-    require(_order.highestBidder != msg.sender, "Your bid is the highest price, can't withdraw");
+    require(fundsByBidder[msg.sender][_auctionOrderId] > 0, 'You do not bid this auction');
+    require(_order.highestBidder != msg.sender, 'Your bid is the highest price, can not withdraw');
     require(
       ERC20(token).balanceOf(recipient) >= fundsByBidder[msg.sender][_auctionOrderId],
       'Balance of Auction Market not enough to withdraw'
